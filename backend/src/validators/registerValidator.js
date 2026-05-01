@@ -23,6 +23,14 @@ const registerSchema = {
       email: 'Please provide a valid email address',
     },
   },
+  phone: { 
+    type: 'string', 
+    pattern: /^[0-9]{10,15}$/, 
+    optional: false, 
+    messages: { 
+      pattern: 'Phone must be 10-15 digits' 
+    } 
+  },
   password: {
     type: 'string',
     min: 6,
