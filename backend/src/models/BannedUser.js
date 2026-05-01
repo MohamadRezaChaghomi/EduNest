@@ -26,7 +26,6 @@ const bannedUserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-bannedUserSchema.index({ user: 1 });
 bannedUserSchema.index({ expiresAt: 1 });
 
 module.exports = mongoose.model('BannedUser', bannedUserSchema);
