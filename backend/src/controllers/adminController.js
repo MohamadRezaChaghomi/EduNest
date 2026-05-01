@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const BannedUser = require('../models/BannedUser');
 
-// Get all users with pagination, filters, and ban status
+// Get all users with pagination, filters, and ban status (including phone)
 const getAllUsers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -14,6 +14,7 @@ const getAllUsers = async (req, res) => {
       filter.$or = [
         { name: { $regex: req.query.search, $options: 'i' } },
         { email: { $regex: req.query.search, $options: 'i' } },
+        { phone: { $regex: req.query.search, $options: 'i' } },
       ];
     }
 
@@ -23,7 +24,9 @@ const getAllUsers = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    const bans = await BannedUser.find({ user: { $in: users.map(u => u._id) } }).populate('bannedBy', 'name email');
+    // Get ban info for each user
+    const userIds = users.map(u => u._id);
+    const bans = await BannedUser.find({ user: { $in: userIds } }).populate('bannedBy', 'name email');
     const banMap = {};
     bans.forEach(ban => {
       banMap[ban.user.toString()] = ban;
@@ -47,7 +50,7 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// Ban a user
+// Ban a user (admin only)
 const banUser = async (req, res) => {
   try {
     const { reason, expiresAt } = req.body;
@@ -117,7 +120,7 @@ const changeUserRole = async (req, res) => {
     res.json({
       success: true,
       message: `Role updated to ${role}`,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role },
     });
   } catch (error) {
     console.error(error);
@@ -125,7 +128,7 @@ const changeUserRole = async (req, res) => {
   }
 };
 
-// Helper function to check ban status (used in auth and middleware)
+// Helper function to check if a user is banned (used in auth and middleware)
 const isUserBanned = async (userId) => {
   const ban = await BannedUser.findOne({ user: userId });
   if (!ban) return false;
