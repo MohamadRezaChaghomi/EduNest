@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { isUserBanned } = require('./adminController');
 const validateRegister = require('../validators/registerValidator');
 const validateLogin = require('../validators/loginValidator');
 
@@ -29,7 +30,6 @@ const register = async (req, res) => {
       role: role || 'user',
     });
 
-    // Generate token
     const token = user.getSignedJwtToken();
 
     res.status(201).json({
@@ -67,13 +67,18 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // Check if user is banned
+    const banned = await isUserBanned(user._id);
+    if (banned) {
+      return res.status(403).json({ message: 'Your account has been banned. Contact support.' });
+    }
+
     // Check password
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate token
     const token = user.getSignedJwtToken();
 
     res.status(200).json({
@@ -100,6 +105,11 @@ const getMe = async (req, res) => {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+    // Check if user is banned (even if token is valid, but maybe ban occurred after login)
+    const banned = await isUserBanned(user._id);
+    if (banned) {
+      return res.status(403).json({ message: 'Your account has been banned.' });
     }
     res.status(200).json({
       success: true,

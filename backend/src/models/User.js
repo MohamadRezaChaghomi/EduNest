@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+/**
+ * User Schema - Core user information.
+ * Ban related fields are removed; they are handled by BannedUser model.
+ */
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -44,16 +48,16 @@ const userSchema = new mongoose.Schema(
     resetPasswordExpire: Date,
   },
   {
-    timestamps: true, // Automatically adds createdAt and updatedAt
+    timestamps: true,
   }
 );
 
-// Hash password before saving
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+// Hash password before saving (only if modified)
+userSchema.pre('save', async function () {
+  if (this.isModified('password')) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
 });
 
 // Compare entered password with hashed password
