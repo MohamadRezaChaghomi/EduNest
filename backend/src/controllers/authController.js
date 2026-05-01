@@ -3,44 +3,22 @@ const { isUserBanned } = require('./adminController');
 const validateRegister = require('../validators/registerValidator');
 const validateLogin = require('../validators/loginValidator');
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public
+// Register
 const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-
-    // Validate input
     const validationResult = validateRegister({ name, email, password, role });
-    if (validationResult !== true) {
-      return res.status(400).json({ errors: validationResult });
-    }
+    if (validationResult !== true) return res.status(400).json({ errors: validationResult });
 
-    // Check if user already exists
     const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: 'Email already exists' });
-    }
+    if (userExists) return res.status(400).json({ message: 'Email already exists' });
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role: role || 'user',
-    });
-
+    const user = await User.create({ name, email, password, role: role || 'user' });
     const token = user.getSignedJwtToken();
-
     res.status(201).json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
     });
   } catch (error) {
     console.error(error);
@@ -48,48 +26,27 @@ const register = async (req, res) => {
   }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
+// Login
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Validate input
     const validationResult = validateLogin({ email, password });
-    if (validationResult !== true) {
-      return res.status(400).json({ errors: validationResult });
-    }
+    if (validationResult !== true) return res.status(400).json({ errors: validationResult });
 
-    // Check for user
     const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
-    // Check if user is banned
     const banned = await isUserBanned(user._id);
-    if (banned) {
-      return res.status(403).json({ message: 'Your account has been banned. Contact support.' });
-    }
+    if (banned) return res.status(403).json({ message: 'Your account has been banned. Contact support.' });
 
-    // Check password
     const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = user.getSignedJwtToken();
-
-    res.status(200).json({
+    res.json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
     });
   } catch (error) {
     console.error(error);
@@ -97,23 +54,32 @@ const login = async (req, res) => {
   }
 };
 
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private
+// Get current user (basic info)
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    // Check if user is banned (even if token is valid, but maybe ban occurred after login)
+    if (!user) return res.status(404).json({ message: 'User not found' });
     const banned = await isUserBanned(user._id);
-    if (banned) {
-      return res.status(403).json({ message: 'Your account has been banned.' });
-    }
-    res.status(200).json({
+    if (banned) return res.status(403).json({ message: 'Account banned' });
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Update profile (name, bio, profileImage)
+const updateProfile = async (req, res) => {
+  try {
+    const { name, bio, profileImage } = req.body;
+    const user = await User.findById(req.user.id);
+    if (name) user.name = name;
+    if (bio !== undefined) user.bio = bio;
+    if (profileImage !== undefined) user.profileImage = profileImage;
+    await user.save();
+    res.json({
       success: true,
-      user,
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, bio: user.bio, profileImage: user.profileImage },
     });
   } catch (error) {
     console.error(error);
@@ -121,8 +87,36 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = {
-  register,
-  login,
-  getMe,
+// Change password
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user.id).select('+password');
+    if (!(await user.matchPassword(currentPassword))) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    }
+    user.password = newPassword;
+    await user.save();
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
+
+// Get full profile (detailed)
+const getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password -resetPasswordToken -resetPasswordExpire');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { register, login, getMe, updateProfile, changePassword, getProfile };

@@ -2,10 +2,6 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-/**
- * User Schema - Core user information.
- * Ban related fields are removed; they are handled by BannedUser model.
- */
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -28,7 +24,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
-      select: false, // Do not return password by default
+      select: false,
     },
     role: {
       type: String,
@@ -47,12 +43,9 @@ const userSchema = new mongoose.Schema(
     resetPasswordToken: String,
     resetPasswordExpire: Date,
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Hash password before saving (only if modified)
 userSchema.pre('save', async function () {
   if (this.isModified('password')) {
     const salt = await bcrypt.genSalt(10);
@@ -60,19 +53,15 @@ userSchema.pre('save', async function () {
   }
 });
 
-// Compare entered password with hashed password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Generate JWT token
 userSchema.methods.getSignedJwtToken = function () {
   return jwt.sign(
     { id: this._id, role: this.role },
     process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_EXPIRE || '30d',
-    }
+    { expiresIn: process.env.JWT_EXPIRE || '30d' }
   );
 };
 

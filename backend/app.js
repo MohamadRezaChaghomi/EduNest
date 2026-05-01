@@ -1,19 +1,21 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const dotenv = require('dotenv');
 const connectDB = require('./src/config/db');
 const authRoutes = require('./src/routes/authRoutes');
+const adminRoutes = require('./src/routes/adminRoutes');
 
 // Load environment variables
-require('dotenv').config();
+dotenv.config();
 
-// Connect to database
+// Connect to MongoDB
 connectDB();
 
 const app = express();
 
 // ========== Default Middlewares ==========
-// Enable CORS for all origins (you can restrict later)
+// Enable CORS for all origins (can be restricted later)
 app.use(cors());
 
 // Parse JSON request bodies
@@ -22,22 +24,22 @@ app.use(express.json());
 // Parse URL-encoded request bodies (for form submissions)
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (course cover images, etc.)
+// Serve static files (course cover images, profile images, etc.)
 // Images are stored in: backend/public/courses/cover
 app.use('/public', express.static(path.join(__dirname, 'public')));
-
-// Optional: direct route for course covers (shorter URL)
+// Optional: shorter URL for course covers
 app.use('/courses/cover', express.static(path.join(__dirname, 'public/courses/cover')));
 
 // ========== Routes ==========
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
-// ========== Test Route ==========
+// Test route to check if backend is running
 app.get('/api/test', (req, res) => {
   res.json({ message: 'EduNest backend is running!' });
 });
 
-// ========== Error handling middleware (optional for now) ==========
+// ========== Error Handling ==========
 // 404 handler for undefined routes
 app.use((req, res, next) => {
   res.status(404).json({ message: 'Route not found' });
