@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const validateRegister = require('../validators/registerValidator');
+const validateLogin = require('../validators/loginValidator');
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -6,6 +8,12 @@ const User = require('../models/User');
 const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
+
+    // Validate input
+    const validationResult = validateRegister({ name, email, password, role });
+    if (validationResult !== true) {
+      return res.status(400).json({ errors: validationResult });
+    }
 
     // Check if user already exists
     const userExists = await User.findOne({ email });
@@ -47,9 +55,10 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate email & password
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Please provide email and password' });
+    // Validate input
+    const validationResult = validateLogin({ email, password });
+    if (validationResult !== true) {
+      return res.status(400).json({ errors: validationResult });
     }
 
     // Check for user
@@ -58,7 +67,7 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Check if password matches
+    // Check password
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -88,8 +97,10 @@ const login = async (req, res) => {
 // @access  Private
 const getMe = async (req, res) => {
   try {
-    // req.user is set by protect middleware
     const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     res.status(200).json({
       success: true,
       user,
