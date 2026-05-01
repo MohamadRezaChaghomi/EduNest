@@ -1,3 +1,4 @@
+
 # 🪹 EduNest – Full‑Stack Online Course Marketplace
 
 <p align="center">
@@ -13,7 +14,7 @@
   <img src="https://img.shields.io/badge/MongoDB-9.x-47A248?style=flat-square&logo=mongodb&logoColor=white" />
   <img src="https://img.shields.io/badge/Next.js-14.x-000000?style=flat-square&logo=nextdotjs&logoColor=white" />
   <img src="https://img.shields.io/badge/TailwindCSS-4.x-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" />
-  <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?style=flat-square&logo=javascript&logoColor=black" />
 </p>
 
 <br />
@@ -60,12 +61,12 @@ Built with **Node.js**, **Express**, **MongoDB** on the backend and **Next.js 14
 ## 🧱 Tech Stack
 
 <p align="center">
-  <img src="https://skillicons.dev/icons?i=nodejs,express,mongodb,nextjs,react,tailwind,ts,vercel" />
+  <img src="https://skillicons.dev/icons?i=nodejs,express,mongodb,nextjs,react,tailwind,js,vercel" />
 </p>
 
 | Layer | Technologies |
 |-------|--------------|
-| **Frontend** | Next.js 14 (App Router) · React 18 · TypeScript · Tailwind CSS · Shadcn/ui · Framer Motion · React Hook Form · Zod |
+| **Frontend** | Next.js 14 (App Router) · React 18 · JavaScript (ES2022) · Tailwind CSS · Shadcn/ui · Framer Motion · React Hook Form · Zod |
 | **Backend**  | Node.js · Express.js · MongoDB (Mongoose) · JWT · bcryptjs · Nodemailer · Multer |
 | **Payments** | Stripe (sandbox) + ready for local gateways |
 | **Storage**  | Cloudinary / AWS S3 (videos & images) |
@@ -74,38 +75,34 @@ Built with **Node.js**, **Express**, **MongoDB** on the backend and **Next.js 14
 ---
 
 ## 🏗️ Architecture (MVC + REST API)
-
-```
 ┌────────────────────────────────────────────────────┐
-│              Presentation (View)                   │
-│       Next.js App Router + Tailwind CSS            │
+│ Presentation (View) │
+│ Next.js App Router + Tailwind CSS │
 └────────────────────────────────────────────────────┘
-                         │
-                         ▼
+│
+▼
 ┌────────────────────────────────────────────────────┐
-│            API Layer (Controller)                  │
-│   Express routes: auth, courses, orders, admin     │
+│ API Layer (Controller) │
+│ Express routes: auth, courses, orders, admin │
 └────────────────────────────────────────────────────┘
-                         │
-                         ▼
+│
+▼
 ┌────────────────────────────────────────────────────┐
-│               Model Layer (Mongoose)               │
-│   User · Course · Section · Lesson · Order ·       │
-│   Review · Wishlist · Progress                     │
+│ Model Layer (Mongoose) │
+│ User · Course · Section · Lesson · Order · │
+│ Review · Wishlist · Progress │
 └────────────────────────────────────────────────────┘
-                         │
-                         ▼
+│
+▼
 ┌────────────────────────────────────────────────────┐
-│                Database (MongoDB)                  │
-│         Local (development) / Atlas (prod)         │
+│ Database (MongoDB) │
+│ Local (development) / Atlas (prod) │
 └────────────────────────────────────────────────────┘
-```
 
 ---
 
 ## 📁 Project Structure (Monorepo)
 
-```bash
 EduNest/
 ├── backend/                   # Node.js + Express API
 │   ├── src/
@@ -124,65 +121,51 @@ EduNest/
 │   │   ├── components/       # React components
 │   │   ├── lib/              # API calls, hooks
 │   │   ├── styles/           # global CSS
-│   │   └── types/            # TypeScript definitions
 │   ├── .env.local
 │   └── next.config.js
 ├── .gitignore
 └── README.md
-```
 
----
+🚀 Getting Started
+Prerequisites
+Node.js 18+ and npm/yarn/pnpm
 
-## 🚀 Getting Started
+MongoDB (local or Atlas)
 
-### Prerequisites
+Stripe account (for testing payments)
 
-- Node.js **18+** and npm/yarn/pnpm
-- MongoDB (local or Atlas)
-- Stripe account (for testing payments)
-- Cloudinary account (for video uploads)
+Cloudinary account (for video uploads)
 
-### Installation
+Installation
+Clone the repo
 
-1. **Clone the repo**
-   ```bash
-   git clone https://github.com/MohamadRezaChaghomi/EduNest.git
-   cd EduNest
-   ```
 
-2. **Backend setup**
-   ```bash
-   cd backend
-   npm install
-   cp .env.example .env
-   # edit .env with your credentials
-   ```
+git clone https://github.com/MohamadRezaChaghomi/EduNest.git
+cd EduNest
+Backend setup
 
-3. **Frontend setup**
-   ```bash
-   cd ../frontend
-   npm install
-   cp .env.local.example .env.local
-   # edit .env.local
-   ```
+cd backend
+npm install
+cp .env.example .env
+# edit .env with your credentials
+Frontend setup
 
-4. **Run development servers**
-   ```bash
-   # Terminal 1
-   cd backend && npm run dev
+cd ../frontend
+npm install
+cp .env.local.example .env.local
+# edit .env.local
+Run development servers
 
-   # Terminal 2
-   cd frontend && npm run dev
-   ```
+# Terminal 1
+cd backend && npm run dev
 
-5. **Open** `http://localhost:3000` 🎉
+# Terminal 2
+cd frontend && npm run dev
+Open http://localhost:3000 🎉
 
----
+🔐 Environment Variables
+Backend (.env)
 
-## 🔐 Environment Variables
-
-### Backend (`.env`)
-```ini
 PORT=5000
 MONGO_URI=mongodb://127.0.0.1:27017/edunest
 JWT_SECRET=your_super_secret_key
@@ -192,120 +175,96 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 STRIPE_SECRET_KEY=sk_test_...
-```
+Frontend (.env.local)
 
-### Frontend (`.env.local`)
-```ini
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-```
+📡 API Endpoints (Examples)
+Method	Endpoint	Description	Access
+POST	/api/auth/register	Register new user	Public
+POST	/api/auth/login	Login → JWT cookie	Public
+GET	/api/auth/profile	Get user profile	Private
+GET	/api/courses	Paginated course list	Public
+GET	/api/courses/:id	Course details	Public
+POST	/api/courses	Create course	Instructor
+PUT	/api/courses/:id	Update course	Instructor
+POST	/api/orders/checkout	Create order & payment	User
+GET	/api/orders/my	User's order history	User
+GET	/api/admin/users	All users	Admin
+Full Postman collection available on request.
 
----
+🧪 Development Notes
+Challenges & Solutions
+Challenge	Solution
+🔤 Persian text in URLs	slugify with Unicode support
+📦 Drag‑&‑drop curriculum	@dnd-kit/sortable + recursive state
+🎬 Video progress tracking	Store watch time per lesson, aggregate on demand
+🔒 Role‑based access	Middleware checking JWT payload on each request
+⚡ Performance	Database indexes + Next.js ISR for course pages
+Technical Decisions
+✅ Next.js App Router – Better SEO & server components.
 
-## 📡 API Endpoints (Examples)
+✅ Separate backend – Independent deployment & scaling.
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| `POST` | `/api/auth/register` | Register new user | Public |
-| `POST` | `/api/auth/login` | Login → JWT cookie | Public |
-| `GET` | `/api/auth/profile` | Get user profile | Private |
-| `GET` | `/api/courses` | Paginated course list | Public |
-| `GET` | `/api/courses/:id` | Course details | Public |
-| `POST` | `/api/courses` | Create course | Instructor |
-| `PUT` | `/api/courses/:id` | Update course | Instructor |
-| `POST` | `/api/orders/checkout` | Create order & payment | User |
-| `GET` | `/api/orders/my` | User's order history | User |
-| `GET` | `/api/admin/users` | All users | Admin |
+✅ MongoDB – Flexible schema for dynamic course content.
 
-> Full Postman collection available on request.
+✅ JWT in HTTP‑only cookies – More secure than localStorage.
 
----
+✅ Tailwind + Shadcn/ui – Rapid UI development with consistent design.
 
-## 🧪 Development Notes
+📊 Current Status & Roadmap
+Module	Status	Notes
+🔐 Authentication	✅ Complete	Register, login, profile, logout
+📚 Course CRUD	✅ Complete	Sections & lessons
+👨‍🏫 Instructor panel	✅ Complete	Curriculum builder, video upload
+🛒 Shopping cart	✅ Complete	Add/remove, quantity
+💳 Payment (Stripe)	✅ Complete	Sandbox working
+📈 User progress	✅ Complete	Watch time per lesson
+💬 Reviews & ratings	✅ Complete	With admin approval
+🛠️ Admin dashboard	🚧 In progress	Basic user & course management done
+🔑 OAuth (Google)	⏳ Planned	NextAuth integration
+💬 Real‑time chat	❌ Future	Not in initial scope
+🎓 Project Context
+Purpose – Portfolio project to demonstrate full‑stack skills for an e‑learning marketplace.
 
-### Challenges & Solutions
+Inspiration – SabzLearn, Udemy, and leading Iranian platforms.
 
-| Challenge | Solution |
-|-----------|----------|
-| 🔤 Persian text in URLs | `slugify` with Unicode support |
-| 📦 Drag‑&‑drop curriculum | `@dnd-kit/sortable` + recursive state |
-| 🎬 Video progress tracking | Store watch time per lesson, aggregate on demand |
-| 🔒 Role‑based access | Middleware checking JWT payload on each request |
-| ⚡ Performance | Database indexes + Next.js ISR for course pages |
+Timeline – Started March 2026, actively developed.
 
-### Technical Decisions
+Role – Sole developer (architecture, frontend, backend, deployment).
 
-- ✅ **Next.js App Router** – Better SEO & server components.
-- ✅ **Separate backend** – Independent deployment & scaling.
-- ✅ **MongoDB** – Flexible schema for dynamic course content.
-- ✅ **JWT in HTTP‑only cookies** – More secure than localStorage.
-- ✅ **Tailwind + Shadcn/ui** – Rapid UI development with consistent design.
+🤝 Contributing
+Contributions are welcome!
 
----
+Fork the project
 
-## 📊 Current Status & Roadmap
+Create your feature branch (git checkout -b feature/amazing)
 
-| Module | Status | Notes |
-|--------|--------|-------|
-| 🔐 Authentication | ✅ Complete | Register, login, profile, logout |
-| 📚 Course CRUD | ✅ Complete | Sections & lessons |
-| 👨‍🏫 Instructor panel | ✅ Complete | Curriculum builder, video upload |
-| 🛒 Shopping cart | ✅ Complete | Add/remove, quantity |
-| 💳 Payment (Stripe) | ✅ Complete | Sandbox working |
-| 📈 User progress | ✅ Complete | Watch time per lesson |
-| 💬 Reviews & ratings | ✅ Complete | With admin approval |
-| 🛠️ Admin dashboard | 🚧 In progress | Basic user & course management done |
-| 🔑 OAuth (Google) | ⏳ Planned | NextAuth integration |
-| 💬 Real‑time chat | ❌ Future | Not in initial scope |
+Commit your changes (git commit -m 'Add amazing feature')
 
----
+Push to the branch (git push origin feature/amazing)
 
-## 🎓 Project Context
+Open a Pull Request
 
-- **Purpose** – Portfolio project to demonstrate full‑stack skills for an e‑learning marketplace.
-- **Inspiration** – SabzLearn, Udemy, and leading Iranian platforms.
-- **Timeline** – Started March 2026, actively developed.
-- **Role** – Sole developer (architecture, frontend, backend, deployment).
+📄 License
+Distributed under the MIT License. See LICENSE for more information.
 
----
+👤 Developer
+MohamadReza Chaghomi
 
-## 🤝 Contributing
+📧 mohamad.chaghomi@gmail.com
 
-Contributions are **welcome**!  
-1. Fork the project  
-2. Create your feature branch (`git checkout -b feature/amazing`)  
-3. Commit your changes (`git commit -m 'Add amazing feature'`)  
-4. Push to the branch (`git push origin feature/amazing`)  
-5. Open a Pull Request
+🐙 github.com/MohamadRezaChaghomi
 
----
+🔗 EduNest on GitHub
 
-## 📄 License
+🙏 Acknowledgements
+Node.js · Express · MongoDB
 
-Distributed under the **MIT License**. See `LICENSE` for more information.
+Next.js · Tailwind CSS · Shadcn/ui
 
----
+Stripe · Cloudinary
 
-## 👤 Developer
+All amazing open‑source contributors
 
-**MohamadReza Chaghomi**  
-- 📧 mohamad.chaghomi@gmail.com  
-- 🐙 [github.com/MohamadRezaChaghomi](https://github.com/MohamadRezaChaghomi)  
-- 🔗 [EduNest on GitHub](https://github.com/MohamadRezaChaghomi/EduNest)
-
----
-
-## 🙏 Acknowledgements
-
-- [Node.js](https://nodejs.org/) · [Express](https://expressjs.com/) · [MongoDB](https://www.mongodb.com/)
-- [Next.js](https://nextjs.org/) · [Tailwind CSS](https://tailwindcss.com/) · [Shadcn/ui](https://ui.shadcn.com/)
-- [Stripe](https://stripe.com/) · [Cloudinary](https://cloudinary.com/)
-- All amazing open‑source contributors
-
----
-
-<p align="center">
-  <i>Made with ❤️ and a lot of ☕ by MohamadReza</i><br/>
-  <b>EduNest – Grow your knowledge, build your future.</b>
-</p>
-
+<p align="center"> <i>Made with ❤️ and a lot of ☕ by MohamadReza</i><br/> <b>EduNest – Grow your knowledge, build your future.</b> </p> ```
