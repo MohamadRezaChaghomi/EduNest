@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const loginAttemptSchema = new mongoose.Schema(
   {
     identifier: {
-      type: String, // email or phone
+      type: String,
       required: true,
       lowercase: true,
       trim: true,
@@ -20,7 +20,6 @@ const loginAttemptSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index for quick lookups
 loginAttemptSchema.index({ identifier: 1 });
 loginAttemptSchema.index({ lockedUntil: 1 });
 

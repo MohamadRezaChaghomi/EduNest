@@ -14,7 +14,7 @@ const otpSchema = new mongoose.Schema(
     expiresAt: {
       type: Date,
       required: true,
-      default: () => Date.now() + 5 * 60 * 1000, // 5 minutes
+      default: () => Date.now() + 5 * 60 * 1000,
     },
     attempts: {
       type: Number,
@@ -28,7 +28,6 @@ const otpSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index for auto-expire (TTL)
 otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('OTP', otpSchema);
