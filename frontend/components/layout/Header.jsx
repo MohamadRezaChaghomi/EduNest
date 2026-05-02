@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import Link from 'next/link';
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -16,9 +17,7 @@ export default function Header() {
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-bold">EduNest</span>
-        </div>
+        <Link href="/" className="text-xl font-bold">EduNest</Link>
         <div className="flex items-center gap-4">
           <ThemeToggle />
           <div className="flex items-center gap-2">
