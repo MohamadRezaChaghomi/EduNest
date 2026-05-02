@@ -1,11 +1,10 @@
-import Review from '../models/Review.js';
-import Course from '../models/Course.js';
-import User from '../models/User.js';
+const Review = require('../models/Review');
+const Course = require('../models/Course');
 
-// محاسبه میانگین امتیازات یک دوره و به‌روزرسانی
+// به‌روزرسانی میانگین امتیاز با یک رقم اعشار
 const updateCourseRating = async (courseId) => {
   const result = await Review.aggregate([
-    { $match: { course: courseId, rating: { $exists: true, $ne: null }, parentReview: null } },
+    { $match: { course: courseId, rating: { $exists: true, $ne: null }, parentReview: null, isApproved: true } },
     { $group: { _id: null, avgRating: { $avg: '$rating' }, count: { $sum: 1 } } }
   ]);
   const avg = result.length > 0 ? Math.round(result[0].avgRating * 10) / 10 : 0;
@@ -13,33 +12,39 @@ const updateCourseRating = async (courseId) => {
   await Course.findByIdAndUpdate(courseId, { ratingAverage: avg, ratingCount: count });
 };
 
-// @desc    افزودن نظر جدید (اصلی یا ریپلای)
-// @route   POST /api/reviews
-// @access  Private (فقط کاربرانی که دوره را خریداری کرده‌اند می‌توانند نظر اصلی بدهند – بعداً اضافه می‌شود)
-export const createReview = async (req, res) => {
+// محدودیت ضد اسپم: حداکثر ۳ نظر اصلی در ۲۴ ساعت برای هر دوره
+const checkSpamLimit = async (userId, courseId) => {
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const count = await Review.countDocuments({
+    user: userId,
+    course: courseId,
+    parentReview: null,
+    createdAt: { $gte: twentyFourHoursAgo }
+  });
+  if (count >= 3) throw new Error('شما بیش از حد مجاز نظر داده‌اید. لطفاً ۲۴ ساعت صبر کنید.');
+};
+
+// ایجاد نظر (اصلی یا ریپلای) با ضد اسپم
+exports.createReview = async (req, res) => {
   try {
     const { course, rating, comment, parentReview } = req.body;
     const userId = req.user.id;
-
-    // بررسی خرید دوره (ساده: فقط بررسی کنید کاربر در آرایه students دوره است)
     const courseDoc = await Course.findById(course);
     if (!courseDoc) return res.status(404).json({ message: 'دوره پیدا نشد' });
-    
+
     if (!parentReview) {
-      // نظر اصلی: نیاز به امتیاز و خرید دوره
       if (!rating) return res.status(400).json({ message: 'امتیاز الزامی است' });
       const hasPurchased = courseDoc.students.includes(userId);
       if (!hasPurchased && req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'شما این دوره را خریداری نکرده‌اید، نمی‌توانید نظر دهید' });
+        return res.status(403).json({ message: 'شما این دوره را خریداری نکرده‌اید' });
       }
-      // جلوگیری از چند نظر اصلی برای یک دوره از یک کاربر
       const existing = await Review.findOne({ course, user: userId, parentReview: null });
-      if (existing) return res.status(400).json({ message: 'شما قبلاً برای این دوره نظر داده‌اید' });
+      if (existing) return res.status(400).json({ message: 'شما قبلاً نظر داده‌اید' });
+      await checkSpamLimit(userId, course);
     } else {
-      // ریپلای: بررسی وجود نظر والد و جلوگیری از ریپلای روی ریپلای (اختیاری)
       const parent = await Review.findById(parentReview);
       if (!parent) return res.status(404).json({ message: 'نظر اصلی یافت نشد' });
-      if (parent.parentReview) return res.status(400).json({ message: 'نمی‌توان به یک ریپلای پاسخ داد' });
+      if (parent.parentReview) return res.status(400).json({ message: 'نمی‌توان به ریپلای پاسخ داد' });
     }
 
     const review = await Review.create({
@@ -50,43 +55,59 @@ export const createReview = async (req, res) => {
       parentReview: parentReview || null,
     });
 
-    // اگر نظر اصلی بود، میانگین امتیاز را به‌روز کن
-    if (!parentReview) {
-      await updateCourseRating(course);
-    }
+    if (!parentReview) await updateCourseRating(course);
 
-    // populate اطلاعات کاربر برای پاسخ
-    await review.populate('user', 'name role');
-
+    await review.populate('user', 'name role avatar');
     res.status(201).json(review);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    دریافت نظرات یک دوره (همراه با ریپلای‌ها و لایک‌ها)
-// @route   GET /api/reviews/course/:courseId
-// @access  Public
-export const getCourseReviews = async (req, res) => {
+// دریافت نظرات با مرتب‌سازی، فیلتر، و پین شده‌ها
+exports.getCourseReviews = async (req, res) => {
   try {
     const { courseId } = req.params;
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, sort = 'newest', rating } = req.query;
     
-    const reviews = await Review.find({ course: courseId, parentReview: null, isApproved: true })
-      .populate('user', 'name role')
-      .populate({
-        path: 'replies',
-        populate: { path: 'user', select: 'name role' },
-      })
-      .sort('-createdAt')
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-    
-    const total = await Review.countDocuments({ course: courseId, parentReview: null, isApproved: true });
-    
+    let filter = { course: courseId, parentReview: null, isApproved: true };
+    if (rating && !isNaN(rating)) filter.rating = parseInt(rating);
+
+    let reviews;
+    const skip = (page - 1) * limit;
+    const limitNum = parseInt(limit);
+
+    if (sort === 'mostLiked') {
+      const agg = await Review.aggregate([
+        { $match: filter },
+        { $addFields: { likesCount: { $size: '$likes' } } },
+        { $sort: { isPinned: -1, likesCount: -1, createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limitNum }
+      ]);
+      const ids = agg.map(r => r._id);
+      reviews = await Review.find({ _id: { $in: ids } })
+        .populate('user', 'name role avatar')
+        .populate({ path: 'replies', populate: { path: 'user', select: 'name role avatar' } });
+      // حفظ ترتیب
+      reviews = ids.map(id => reviews.find(r => r._id.toString() === id.toString()));
+    } else {
+      let sortOption = { isPinned: -1, createdAt: -1 };
+      if (sort === 'highestRated') sortOption = { isPinned: -1, rating: -1, createdAt: -1 };
+      else if (sort === 'newest') sortOption = { isPinned: -1, createdAt: -1 };
+      
+      reviews = await Review.find(filter)
+        .populate('user', 'name role avatar')
+        .populate({ path: 'replies', populate: { path: 'user', select: 'name role avatar' } })
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limitNum);
+    }
+
+    const total = await Review.countDocuments(filter);
     res.json({
       reviews,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limitNum),
       currentPage: page,
       total,
     });
@@ -95,10 +116,8 @@ export const getCourseReviews = async (req, res) => {
   }
 };
 
-// @desc    ویرایش نظر (فقط مالک یا ادمین)
-// @route   PUT /api/reviews/:id
-// @access  Private
-export const updateReview = async (req, res) => {
+// ویرایش نظر (محدودیت ۳۰ دقیقه)
+exports.updateReview = async (req, res) => {
   try {
     const { comment, rating } = req.body;
     const review = await Review.findById(req.params.id);
@@ -106,51 +125,46 @@ export const updateReview = async (req, res) => {
     if (review.user.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'دسترسی غیرمجاز' });
     }
+    const now = new Date();
+    const diffMinutes = (now - review.createdAt) / (1000 * 60);
+    if (diffMinutes > 30 && req.user.role !== 'admin') {
+      return res.status(400).json({ message: 'فقط تا ۳۰ دقیقه بعد از ثبت نظر می‌توانید ویرایش کنید' });
+    }
     if (comment) review.comment = comment;
     if (rating !== undefined && !review.parentReview) review.rating = rating;
+    review.editedAt = now;
     await review.save();
-    
     if (!review.parentReview) await updateCourseRating(review.course);
-    
     res.json(review);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    حذف نظر (مالک یا ادمین) – ریپلای‌ها نیز حذف می‌شوند
-// @route   DELETE /api/reviews/:id
-// @access  Private
-export const deleteReview = async (req, res) => {
+// حذف نظر (بدون تغییر)
+exports.deleteReview = async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
     if (!review) return res.status(404).json({ message: 'نظر پیدا نشد' });
     if (review.user.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'دسترسی غیرمجاز' });
     }
-    
-    // حذف تمام ریپلای‌های این نظر (اگر نظر اصلی باشد)
     if (!review.parentReview) {
       await Review.deleteMany({ parentReview: review._id });
     }
     await review.deleteOne();
-    
     if (!review.parentReview) await updateCourseRating(review.course);
-    
     res.json({ message: 'نظر حذف شد' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    لایک/آنلایک کردن نظر
-// @route   POST /api/reviews/:id/like
-// @access  Private
-export const toggleLike = async (req, res) => {
+// لایک/آنلایک
+exports.toggleLike = async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
     if (!review) return res.status(404).json({ message: 'نظر پیدا نشد' });
-    
     const userId = req.user.id;
     const liked = review.likes.includes(userId);
     if (liked) {
@@ -165,10 +179,8 @@ export const toggleLike = async (req, res) => {
   }
 };
 
-// @desc    تایید نظر توسط ادمین (اختیاری)
-// @route   PUT /api/reviews/:id/approve
-// @access  Private (Admin only)
-export const approveReview = async (req, res) => {
+// تایید نظر توسط ادمین
+exports.approveReview = async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
     if (!review) return res.status(404).json({ message: 'نظر پیدا نشد' });
@@ -176,6 +188,47 @@ export const approveReview = async (req, res) => {
     await review.save();
     if (!review.parentReview) await updateCourseRating(review.course);
     res.json({ message: 'نظر تایید شد' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// پین کردن نظر (فقط مدرس دوره یا ادمین)
+exports.pinReview = async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id).populate('course');
+    if (!review) return res.status(404).json({ message: 'نظر پیدا نشد' });
+    const course = review.course;
+    const isInstructor = course.instructor.toString() === req.user.id;
+    if (!isInstructor && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'فقط مدرس دوره یا ادمین می‌تواند نظر را پین کند' });
+    }
+    if (review.parentReview) return res.status(400).json({ message: 'نمی‌توان به ریپلای پین کرد' });
+    review.isPinned = !review.isPinned;
+    await review.save();
+    res.json({ message: review.isPinned ? 'نظر پین شد' : 'پین برداشته شد', isPinned: review.isPinned });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// علامت‌گذاری پاسخ به عنوان رسمی (فقط مدرس دوره یا ادمین)
+exports.markOfficial = async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id).populate({
+      path: 'course',
+      populate: { path: 'instructor' }
+    });
+    if (!review) return res.status(404).json({ message: 'نظر پیدا نشد' });
+    const course = review.course;
+    const isInstructor = course.instructor._id.toString() === req.user.id;
+    if (!isInstructor && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'فقط مدرس دوره یا ادمین می‌تواند پاسخ رسمی ثبت کند' });
+    }
+    if (!review.parentReview) return res.status(400).json({ message: 'فقط پاسخ به نظر می‌تواند رسمی باشد' });
+    review.isOfficial = !review.isOfficial;
+    await review.save();
+    res.json({ message: review.isOfficial ? 'پاسخ به عنوان رسمی ثبت شد' : 'رسمی لغو شد', isOfficial: review.isOfficial });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

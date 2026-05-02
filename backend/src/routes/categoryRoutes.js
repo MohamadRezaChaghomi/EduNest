@@ -1,9 +1,6 @@
-import express from 'express';
-import {
-  createCategory, getCategories, getCategoryById,
-  updateCategory, deleteCategory,
-} from '../controllers/categoryController.js';
-import { protect, adminOnly } from '../middleware/authMiddleware.js';
+const express = require('express');
+const { createCategory, getCategories, getCategoryById, updateCategory, deleteCategory } = require('../controllers/categoryController');
+const { protect, adminOnly } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
@@ -16,4 +13,4 @@ router.route('/:id')
   .put(protect, adminOnly, updateCategory)
   .delete(protect, adminOnly, deleteCategory);
 
-export default router;
+module.exports = router;

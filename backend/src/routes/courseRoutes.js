@@ -1,9 +1,6 @@
-import express from 'express';
-import {
-  createCourse, getCourses, getCourseBySlug,
-  updateCourse, deleteCourse, getMyCourses,
-} from '../controllers/courseController.js';
-import { protect, instructorOnly } from '../middleware/authMiddleware.js';
+const express = require('express');
+const { createCourse, getCourses, getCourseBySlug, updateCourse, deleteCourse, getMyCourses } = require('../controllers/courseController');
+const { protect, instructorOnly } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
@@ -17,4 +14,4 @@ router.route('/:id')
   .put(protect, updateCourse)
   .delete(protect, deleteCourse);
 
-export default router;
+module.exports = router;

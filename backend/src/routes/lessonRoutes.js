@@ -1,8 +1,6 @@
-import express from 'express';
-import {
-  createLesson, updateLesson, deleteLesson, getLessonsBySection,
-} from '../controllers/lessonController.js';
-import { protect } from '../middleware/authMiddleware.js';
+const express = require('express');
+const { createLesson, updateLesson, deleteLesson, getLessonsBySection } = require('../controllers/lessonController');
+const { protect } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
@@ -12,4 +10,4 @@ router.route('/lessons/:id')
   .put(protect, updateLesson)
   .delete(protect, deleteLesson);
 
-export default router;
+module.exports = router;

@@ -1,9 +1,6 @@
-import express from 'express';
-import {
-  createSection, getSectionsByCourse,
-  updateSection, deleteSection,
-} from '../controllers/sectionController.js';
-import { protect } from '../middleware/authMiddleware.js';
+const express = require('express');
+const { createSection, getSectionsByCourse, updateSection, deleteSection } = require('../controllers/sectionController');
+const { protect } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
@@ -15,4 +12,4 @@ router.route('/sections/:id')
   .put(protect, updateSection)
   .delete(protect, deleteSection);
 
-export default router;
+module.exports = router;
