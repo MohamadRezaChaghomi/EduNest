@@ -30,6 +30,7 @@ const courseSchema = new mongoose.Schema({
     type: Number,
     min: 0,
   },
+  
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
@@ -65,6 +66,7 @@ const courseSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   }],
+  enrolledCount: { type: Number, default: 0 },
   ratingAverage: {
     type: Number,
     default: 0,
@@ -81,6 +83,13 @@ courseSchema.virtual('sections', {
   localField: '_id',
   foreignField: 'course',
   options: { sort: { order: 1 } },
+});
+
+courseSchema.pre('save', function(next) {
+  if (this.isModified('students')) {
+    this.enrolledCount = this.students.length;
+  }
+  next();
 });
 
 export default mongoose.model('Course', courseSchema);
