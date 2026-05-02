@@ -45,6 +45,11 @@ const courseSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  status: {
+    type: String,
+    enum: ['draft', 'teaching', 'prerelease', 'completed'],
+    default: 'draft'
+  },
   totalLessons: {
     type: Number,
     default: 0,
