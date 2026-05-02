@@ -3,11 +3,11 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import Link from 'next/link';
 
 export default function LoginForm() {
   const [identifier, setIdentifier] = useState('');
@@ -32,12 +32,10 @@ export default function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
-        <CardDescription className="text-center">
-          Enter your email or phone number and password to login
-        </CardDescription>
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle>Welcome back</CardTitle>
+        <CardDescription>Sign in to your account</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
@@ -46,7 +44,7 @@ export default function LoginForm() {
             <Input
               id="identifier"
               type="text"
-              placeholder="example@email.com or 09123456789"
+              placeholder="john@example.com or 09123456789"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
@@ -72,11 +70,9 @@ export default function LoginForm() {
                 id="rememberMe"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-gray-300"
               />
-              <Label htmlFor="rememberMe" className="text-sm cursor-pointer">
-                Remember me
-              </Label>
+              <Label htmlFor="rememberMe" className="text-sm">Remember me</Label>
             </div>
             <Link href="/forgot-password" className="text-sm text-primary hover:underline">
               Forgot password?
@@ -85,7 +81,7 @@ export default function LoginForm() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Signing in...' : 'Sign in'}
           </Button>
           <div className="text-sm text-center text-muted-foreground">
             {"Don't have an account? "}
@@ -107,7 +103,7 @@ export default function LoginForm() {
             className="w-full"
             onClick={() => router.push('/request-otp')}
           >
-            Login with OTP (SMS)
+            Login with OTP
           </Button>
         </CardFooter>
       </form>

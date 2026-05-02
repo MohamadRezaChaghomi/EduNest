@@ -15,19 +15,18 @@ const setTokenCookies = (res, accessToken, refreshToken, rememberMe) => {
   const isProduction = process.env.NODE_ENV === 'production';
   res.cookie('accessToken', accessToken, {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
-    maxAge: 15 * 60 * 1000, // 15 minutes
+    secure: false,      // برای localhost حتماً false
+    sameSite: 'lax',    // به جای strict
+    maxAge: 15 * 60 * 1000,
   });
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
+    secure: false,
+    sameSite: 'lax',
     path: '/api/auth/refresh',
     maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000,
   });
 };
-
 const clearTokenCookies = (res) => {
   res.clearCookie('accessToken');
   res.clearCookie('refreshToken', { path: '/api/auth/refresh' });

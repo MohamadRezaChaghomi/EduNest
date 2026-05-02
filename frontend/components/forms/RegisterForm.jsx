@@ -3,11 +3,11 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import Link from 'next/link';
 
 export default function RegisterForm() {
   const [name, setName] = useState('');
@@ -21,7 +21,7 @@ export default function RegisterForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -30,10 +30,15 @@ export default function RegisterForm() {
       toast.error('Password must be at least 6 characters');
       return;
     }
+    // optional phone validation (digits only, 10-15)
+    if (!/^\d{10,15}$/.test(phone)) {
+      toast.error('Phone number must be 10-15 digits');
+      return;
+    }
 
     setLoading(true);
     try {
-      await register({ name, email, phone, password });
+      await register({ name, email, phone, password }); // role is optional, backend defaults to 'user'
       toast.success('Account created successfully');
       router.push('/profile');
     } catch (err) {
@@ -44,12 +49,10 @@ export default function RegisterForm() {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
-        <CardDescription className="text-center">
-          Sign up to start learning
-        </CardDescription>
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle>Create an account</CardTitle>
+        <CardDescription>Sign up to get started</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
@@ -70,7 +73,7 @@ export default function RegisterForm() {
             <Input
               id="email"
               type="email"
-              placeholder="example@email.com"
+              placeholder="john@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -88,6 +91,7 @@ export default function RegisterForm() {
               required
               disabled={loading}
             />
+            <p className="text-xs text-muted-foreground">10-15 digits, e.g., 09123456789</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
@@ -138,7 +142,7 @@ export default function RegisterForm() {
             className="w-full"
             onClick={() => router.push('/request-otp')}
           >
-            Register with OTP (SMS)
+            Register with OTP
           </Button>
         </CardFooter>
       </form>

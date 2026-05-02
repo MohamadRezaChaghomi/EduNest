@@ -5,7 +5,7 @@ import './globals.css';
 
 export const metadata = {
   title: 'EduNest',
-  description: 'Online course marketplace',
+  description: 'Online learning platform',
 };
 
 export default function RootLayout({ children }) {

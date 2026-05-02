@@ -1,16 +1,60 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-async function fetchAPI(endpoint, options = {}) {
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || 'Something went wrong');
+// Get token from localStorage
+const getToken = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('accessToken');
   }
-  return res.json();
+  return null;
+};
+
+// Set token in localStorage
+export const setToken = (token) => {
+  if (typeof window !== 'undefined') {
+    if (token) localStorage.setItem('accessToken', token);
+    else localStorage.removeItem('accessToken');
+  }
+};
+
+// Remove token
+export const removeToken = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('accessToken');
+  }
+};
+
+// Core fetch function – no automatic redirect!
+async function fetchAPI(endpoint, options = {}) {
+  const token = getToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options.headers,
+  };
+
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers,
+    credentials: 'include',
+  });
+
+  // If 401 Unauthorized, just throw an error – do NOT redirect here
+  if (res.status === 401) {
+    // Optionally clear the token if you want, but it's better to keep it until login
+    // removeToken(); // if you want to clear it
+    const error = new Error('Unauthorized');
+    error.status = 401;
+    throw error;
+  }
+
+  const data = await res.json();
+  if (!res.ok) {
+    const error = new Error(data.message || 'Request failed');
+    error.status = res.status;
+    error.data = data;
+    throw error;
+  }
+  return data;
 }
 
 export const api = {
@@ -19,7 +63,6 @@ export const api = {
     login: (data) => fetchAPI('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
     logout: () => fetchAPI('/auth/logout', { method: 'POST' }),
     logoutAll: () => fetchAPI('/auth/logout-all', { method: 'POST' }),
-    refresh: () => fetchAPI('/auth/refresh', { method: 'POST' }),
     me: () => fetchAPI('/auth/me'),
     profile: () => fetchAPI('/auth/profile'),
     updateProfile: (data) => fetchAPI('/auth/update-profile', { method: 'PUT', body: JSON.stringify(data) }),
