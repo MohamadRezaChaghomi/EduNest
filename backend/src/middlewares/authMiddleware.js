@@ -4,25 +4,34 @@ const { isUserBanned } = require('../controllers/adminController');
 
 const protect = async (req, res, next) => {
   let token;
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select('-password');
-      if (!req.user) return res.status(401).json({ message: 'User not found' });
 
-      const banned = await isUserBanned(req.user._id);
-      if (banned) return res.status(403).json({ message: 'Your account has been banned.' });
+  // 1) Try to get token from cookie
+  if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
+  // 2) Fallback to Authorization header (Bearer)
+  else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
 
-      next();
-    } catch (error) {
-      if (error.name === 'TokenExpiredError') {
-        return res.status(401).json({ message: 'Token expired' });
-      }
-      return res.status(401).json({ message: 'Invalid token' });
-    }
-  } else {
+  if (!token) {
     return res.status(401).json({ message: 'Not authorized, no token' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id).select('-password');
+    if (!req.user) return res.status(401).json({ message: 'User not found' });
+
+    const banned = await isUserBanned(req.user._id);
+    if (banned) return res.status(403).json({ message: 'Your account has been banned.' });
+
+    next();
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired' });
+    }
+    return res.status(401).json({ message: 'Invalid token' });
   }
 };
 
