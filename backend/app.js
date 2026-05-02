@@ -51,4 +51,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong on the server' });
 });
 
+import curriculumRoutes from './src/routes/curriculumRoutes.js';
+app.use('/api', curriculumRoutes); // پیشوند /api
+
 module.exports = app;

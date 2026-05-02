@@ -1,21 +1,18 @@
 import express from 'express';
 import {
-  createCategory,
-  getCategories,
-  getCategoryById,
-  updateCategory,
-  deleteCategory,
+  createCategory, getCategories, getCategoryById,
+  updateCategory, deleteCategory,
 } from '../controllers/categoryController.js';
 import { protect, adminOnly } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.route('/')
-  .get(getCategories)                 // عمومی
-  .post(protect, adminOnly, createCategory); // فقط ادمین
+  .get(getCategories)
+  .post(protect, adminOnly, createCategory);
 
 router.route('/:id')
-  .get(getCategoryById)               // عمومی
+  .get(getCategoryById)
   .put(protect, adminOnly, updateCategory)
   .delete(protect, adminOnly, deleteCategory);
 
