@@ -1,13 +1,15 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import Link from 'next/link';
+
+// Import Shadcn UI components (مسیرهای صحیح را با توجه به پروژه خود تنظیم کنید)
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import Link from 'next/link';
 
 export default function VerifyOtpForm() {
   const [code, setCode] = useState('');
@@ -15,17 +17,29 @@ export default function VerifyOtpForm() {
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState('');
   const [isClient, setIsClient] = useState(false);
+  
   const { verifyOtp } = useAuth();
   const router = useRouter();
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    setIsClient(true);
-    const storedPhone = sessionStorage.getItem('otpPhone');
-    if (storedPhone) {
-      setPhone(storedPhone);
-    } else {
-      router.push('/request-otp');
-    }
+    isMounted.current = true;
+    const fetchPhone = () => {
+      if (!isMounted.current) return;
+      const storedPhone = sessionStorage.getItem('otpPhone');
+      if (storedPhone) {
+        setPhone(storedPhone);
+      } else {
+        router.push('/request-otp');
+      }
+      setIsClient(true); // فقط بعد از بررسی نهایی، رندر مشتری را فعال کنید
+    };
+
+    fetchPhone();
+
+    return () => {
+      isMounted.current = false;
+    };
   }, [router]);
 
   const handleSubmit = async (e) => {
@@ -48,7 +62,7 @@ export default function VerifyOtpForm() {
   };
 
   if (!isClient) {
-    return null; // یا یک اسپینر لودینگ
+    return null; // از یک اسپینر لودینگ هم می‌توانید استفاده کنید
   }
 
   return (
