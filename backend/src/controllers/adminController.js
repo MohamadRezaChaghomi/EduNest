@@ -3,6 +3,8 @@ const BannedUser = require('../models/BannedUser');
 const RefreshToken = require('../models/RefreshToken');
 const Log = require('../models/Log');
 const { createLog } = require('../utils/logger');
+const OTP = require('../models/OTP');
+const sendSms = require('../utils/sms');
 
 // ---------- Get all users (with ban status) ----------
 const getAllUsers = async (req, res) => {
@@ -216,6 +218,109 @@ const isUserBanned = async (userId) => {
     return false;
   }
   return true;
+};
+
+// ---------- Request OTP ----------
+const requestOtp = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({ message: 'Phone number is required' });
+    }
+    // ارسال تنها یک OTP فعال در هر لحظه مجاز است (می‌توان قبلی را حذف کرد)
+    await OTP.deleteMany({ phone, verified: false });
+
+    // تولید کد ۶ رقمی
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 دقیقه
+
+    await OTP.create({
+      phone,
+      code,
+      expiresAt,
+      attempts: 0,
+      verified: false,
+    });
+
+    // ارسال SMS (placeholder)
+    const message = `Your verification code for EduNest is: ${code}. Valid for 5 minutes.`;
+    await sendSms(phone, message);
+
+    await createLog({
+      action: 'REQUEST_OTP',
+      status: 'SUCCESS',
+      ip: req.clientIp,
+      userAgent: req.userAgent,
+      details: { phone },
+    });
+
+    res.json({ success: true, message: 'OTP sent successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ---------- Verify OTP and login/register ----------
+const verifyOtp = async (req, res) => {
+  try {
+    const { phone, code, rememberMe } = req.body;
+    if (!phone || !code) {
+      return res.status(400).json({ message: 'Phone and code are required' });
+    }
+
+    const otpRecord = await OTP.findOne({ phone, code, verified: false });
+    if (!otpRecord || otpRecord.expiresAt < new Date()) {
+      // افزایش تعداد تلاش‌ها (اختیاری)
+      if (otpRecord) {
+        otpRecord.attempts += 1;
+        await otpRecord.save();
+        if (otpRecord.attempts >= 5) {
+          await OTP.deleteOne({ _id: otpRecord._id });
+        }
+      }
+      return res.status(400).json({ message: 'Invalid or expired code' });
+    }
+
+    // کد صحیح – حذف رکورد OTP و علامت verified
+    await OTP.deleteOne({ _id: otpRecord._id });
+
+    // پیدا کردن یا ایجاد کاربر با این شماره موبایل
+    let user = await User.findOne({ phone });
+    if (!user) {
+      // کاربر جدید با ایمیل موقت (می‌توان بعداً تکمیل کرد)
+      const tempEmail = `user_${phone}@temp.edunest.com`;
+      user = await User.create({
+        name: `User_${phone.slice(-4)}`,
+        email: tempEmail,
+        phone,
+        password: crypto.randomBytes(20).toString('hex'), // رمز تصادفی (کاربر از OTP استفاده می‌کند)
+        role: 'user',
+      });
+    }
+
+    // لاگین کاربر (ایجاد توکن)
+    const accessToken = user.getSignedJwtToken();
+    const refreshTokenObj = await RefreshToken.createToken(user._id, rememberMe === true);
+    setTokenCookies(res, accessToken, refreshTokenObj.token, rememberMe === true);
+
+    await createLog({
+      user: user._id,
+      action: 'OTP_VERIFY_SUCCESS',
+      status: 'SUCCESS',
+      ip: req.clientIp,
+      userAgent: req.userAgent,
+      details: { phone, newUser: !user.email.startsWith('temp') ? 'existing' : 'new' },
+    });
+
+    res.json({
+      success: true,
+      user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
 module.exports = { getAllUsers, banUser, unbanUser, deleteUser, changeUserRole, getLogs, isUserBanned };
