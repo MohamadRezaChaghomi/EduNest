@@ -1,20 +1,46 @@
 const mongoose = require('mongoose');
 
-const lessonCommentSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  lesson: { type: mongoose.Schema.Types.ObjectId, ref: 'Lesson', required: true },
-  comment: { type: String, required: true, trim: true },
-  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  isApproved: { type: Boolean, default: false },   // تأیید توسط ادمین (اختیاری)
-  parentComment: { type: mongoose.Schema.Types.ObjectId, ref: 'LessonComment', default: null },
-  editedAt: { type: Date, default: null },
-}, { timestamps: true });
+/**
+ * Comment on a specific lesson (supports replies and likes)
+ */
+const lessonCommentSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'User is required'],
+    },
+    lesson: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Lesson',
+      required: [true, 'Lesson is required'],
+    },
+    comment: {
+      type: String,
+      required: [true, 'Comment is required'],
+      trim: true,
+    },
+    parentComment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'LessonComment',
+      default: null,
+    },
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    isApproved: {
+      type: Boolean,
+      default: false,
+    },
+    editedAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  { timestamps: true }
+);
 
-// ایندکس برای جستجوی سریع
 lessonCommentSchema.index({ lesson: 1, createdAt: -1 });
 lessonCommentSchema.index({ parentComment: 1 });
 
-// Virtual برای گرفتن پاسخ‌ها
 lessonCommentSchema.virtual('replies', {
   ref: 'LessonComment',
   localField: '_id',

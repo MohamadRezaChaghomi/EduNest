@@ -2,25 +2,11 @@ const mongoose = require('mongoose');
 
 const loginAttemptSchema = new mongoose.Schema(
   {
-    identifier: {
-      type: String,
-      required: true,
-      lowercase: true,
-      trim: true,
-    },
-    attempts: {
-      type: Number,
-      default: 1,
-    },
-    lockedUntil: {
-      type: Date,
-      default: null,
-    },
-  },
-  { timestamps: true }
+    email: { type: String, required: true, index: true },
+    ip: { type: String },
+    success: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now, expires: '1h' }, // auto-delete after 1 hour
+  }
 );
-
-loginAttemptSchema.index({ identifier: 1 });
-loginAttemptSchema.index({ lockedUntil: 1 });
 
 module.exports = mongoose.model('LoginAttempt', loginAttemptSchema);

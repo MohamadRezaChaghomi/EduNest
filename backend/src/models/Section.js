@@ -1,22 +1,29 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
-const sectionSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: [true, 'عنوان بخش الزامی است'],
-    trim: true,
+/**
+ * Section (chapter) of a course
+ */
+const sectionSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, 'Section title is required'],
+      trim: true,
+    },
+    order: {
+      type: Number,
+      default: 0,
+    },
+    course: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+      required: [true, 'Course reference is required'],
+    },
   },
-  order: {
-    type: Number,
-    default: 0,
-  },
-  course: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Course',
-    required: true,
-  },
-}, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+);
 
+// Virtual for lessons inside this section
 sectionSchema.virtual('lessons', {
   ref: 'Lesson',
   localField: '_id',
@@ -24,4 +31,4 @@ sectionSchema.virtual('lessons', {
   options: { sort: { order: 1 } },
 });
 
-export default mongoose.model('Section', sectionSchema);
+module.exports = mongoose.model('Section', sectionSchema);
