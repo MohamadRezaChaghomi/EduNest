@@ -1,20 +1,59 @@
+// app/dashboard/profile/page.js
 'use client';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
-  const { user, logout, loading } = useAuth();
+  const [user, setUser] = useState(null);
+  const [form, setForm] = useState({ name: '', email: '', phone: '' });
+  const [loading, setLoading] = useState(false);
 
-  if (loading) return <div className="p-8">Loading...</div>;
-  if (!user) return <div className="p-8">Please login. <a href="/login" className="text-blue-600 underline">Go to login</a></div>;
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await api.users.getProfile();
+        setUser(data);
+        setForm({ name: data.name, email: data.email, phone: data.phone || '' });
+      } catch (err) {
+        toast.error('خطا در دریافت اطلاعات');
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const updated = await api.users.updateProfile(form);
+      setUser(updated);
+      toast.success('اطلاعات با موفقیت به‌روزرسانی شد');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Profile</h1>
-      <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded mb-4">
-        {JSON.stringify(user, null, 2)}
-      </pre>
-      <Button onClick={logout}>Logout</Button>
-    </div>
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+      <div>
+        <Label htmlFor="name">نام و نام خانوادگی</Label>
+        <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+      </div>
+      <div>
+        <Label htmlFor="email">ایمیل</Label>
+        <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+      </div>
+      <div>
+        <Label htmlFor="phone">شماره موبایل</Label>
+        <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+      </div>
+      <Button type="submit" disabled={loading}>ذخیره تغییرات</Button>
+    </form>
   );
 }
