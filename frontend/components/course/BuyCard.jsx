@@ -1,28 +1,18 @@
 'use client';
-import { useAuth } from '@/hooks/useAuth';
+import Link from 'next/link';  // <-- اضافه شد
+import { useCart } from '@/components/cart/CartProvider';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
 export default function BuyCard({ course }) {
-  const { user } = useAuth();
-  const router = useRouter();
+  const { addToCart, isInCart } = useCart();
+  const inCart = isInCart(course._id);
   const finalPrice = course.discountPrice || course.price;
   const hasDiscount = course.discountPrice && course.discountPrice < course.price;
 
-  const handlePurchase = async () => {
-    if (!user) {
-      router.push('/login?redirect=' + encodeURIComponent(`/course/${course.slug}`));
-      return;
-    }
-    try {
-      const session = await api.payment.createCheckoutSession({ courseId: course._id });
-      if (session.url) window.location.href = session.url;
-      else toast.error('خطا در ایجاد جلسه پرداخت');
-    } catch (error) {
-      toast.error(error.message);
-    }
+  const handleAddToCart = () => {
+    addToCart(course);
+    toast.success('دوره به سبد خرید اضافه شد');
   };
 
   return (
@@ -37,10 +27,20 @@ export default function BuyCard({ course }) {
           <span className="text-3xl font-bold">{finalPrice.toLocaleString()} تومان</span>
         )}
       </div>
-      <Button onClick={handlePurchase} className="w-full" size="lg">
-        خرید دوره
-      </Button>
-      <p className="text-xs text-gray-500 text-center mt-4">پس از خرید، به تمام درس‌ها دسترسی خواهید داشت.</p>
+
+      {inCart ? (
+        <Button className="w-full" variant="outline" disabled>
+          در سبد خرید
+        </Button>
+      ) : (
+        <Button onClick={handleAddToCart} className="w-full">
+          افزودن به سبد خرید
+        </Button>
+      )}
+
+      <Link href="/cart" className="block mt-2 text-center text-sm text-primary">
+        مشاهده سبد خرید
+      </Link>
     </div>
   );
 }
