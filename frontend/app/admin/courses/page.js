@@ -1,3 +1,4 @@
+// app/admin/courses/page.js
 'use client';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
@@ -7,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Search, CheckCircle, XCircle, Trash2, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, Trash2, Eye } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminCoursesPage() {
@@ -15,7 +16,6 @@ export default function AdminCoursesPage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ search: '', isApproved: '', isPublished: '' });
 
-  // تابع fetchCourses را داخل useEffect قرار می‌دهیم و وابستگی filters را اضافه می‌کنیم
   useEffect(() => {
     const fetchCourses = async () => {
       setLoading(true);
@@ -33,19 +33,13 @@ export default function AdminCoursesPage() {
       }
     };
     fetchCourses();
-  }, [filters]); // وابستگی به filters
+  }, [filters]);
 
   const handleApprove = async (courseId, approve) => {
     try {
       await api.courses.update(courseId, { isApproved: approve });
       toast.success(approve ? 'دوره تأیید شد' : 'تأیید برداشته شد');
-      // بعد از عملیات، دوباره داده‌ها را بارگذاری می‌کنیم (می‌توانیم useEffect را مجدداً اجرا کنیم اما بهتر است تابع را فراخوانی کنیم)
-      const params = {};
-      if (filters.search) params.search = filters.search;
-      if (filters.isApproved !== '') params.isApproved = filters.isApproved;
-      if (filters.isPublished !== '') params.isPublished = filters.isPublished;
-      const data = await api.courses.getAllAdmin(params);
-      setCourses(data.courses);
+      setCourses(prev => prev.map(c => c._id === courseId ? { ...c, isApproved: approve } : c));
     } catch (err) {
       toast.error(err.message);
     }
@@ -55,37 +49,21 @@ export default function AdminCoursesPage() {
     try {
       await api.courses.update(courseId, { isPublished: publish });
       toast.success(publish ? 'دوره منتشر شد' : 'انتشار لغو شد');
-      const params = {};
-      if (filters.search) params.search = filters.search;
-      if (filters.isApproved !== '') params.isApproved = filters.isApproved;
-      if (filters.isPublished !== '') params.isPublished = filters.isPublished;
-      const data = await api.courses.getAllAdmin(params);
-      setCourses(data.courses);
+      setCourses(prev => prev.map(c => c._id === courseId ? { ...c, isPublished: publish } : c));
     } catch (err) {
       toast.error(err.message);
     }
   };
 
   const handleDelete = async (courseId) => {
-    if (confirm('آیا از حذف این دوره مطمئن هستید؟')) {
-      try {
-        await api.courses.delete(courseId);
-        toast.success('دوره حذف شد');
-        const params = {};
-        if (filters.search) params.search = filters.search;
-        if (filters.isApproved !== '') params.isApproved = filters.isApproved;
-        if (filters.isPublished !== '') params.isPublished = filters.isPublished;
-        const data = await api.courses.getAllAdmin(params);
-        setCourses(data.courses);
-      } catch (err) {
-        toast.error(err.message);
-      }
+    if (!confirm('آیا از حذف این دوره مطمئن هستید؟')) return;
+    try {
+      await api.courses.delete(courseId);
+      toast.success('دوره حذف شد');
+      setCourses(prev => prev.filter(c => c._id !== courseId));
+    } catch (err) {
+      toast.error(err.message);
     }
-  };
-
-  // برای جستجوی دستی با دکمه (اختیاری)
-  const handleSearch = () => {
-    setFilters({...filters}); // این باعث اجرای مجدد useEffect می‌شود (چون filters تغییر می‌کند)
   };
 
   return (
@@ -109,7 +87,6 @@ export default function AdminCoursesPage() {
             <SelectItem value="false">پیش‌نویس</SelectItem>
           </SelectContent>
         </Select>
-        <Button onClick={handleSearch} variant="outline">جستجو</Button>
       </div>
 
       <Table>
