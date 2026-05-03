@@ -86,4 +86,20 @@ export const api = {
       return fetchAPI(`/admin/logs${query}`);
     },
   },
+   categories: {
+    getAll: () => fetchAPI('/categories'),
+    getById: (id) => fetchAPI(`/categories/${id}`),
+  },
+  courses: {
+    getAll: (params) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI(`/courses${query}`);
+    },
+    getBySlug: (slug) => fetchAPI(`/courses/${slug}`),
+    getPopular: (limit = 6) => fetchAPI(`/courses/popular?limit=${limit}`),
+    getMyCourses: () => fetchAPI('/courses/instructor/my-courses'),
+    create: (data) => fetchAPI('/courses', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => fetchAPI(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => fetchAPI(`/courses/${id}`, { method: 'DELETE' }),
+  },
 };
