@@ -1,110 +1,145 @@
-// app/instructor/courses/page.js
 'use client';
-import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Edit, Trash2, Eye, Users, BookOpen } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
-export default function MyCoursesPage() {
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function NewCoursePage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [loadingCats, setLoadingCats] = useState(true);
+  const [categories, setCategories] = useState([]);
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    shortDescription: '',
+    price: '',
+    discountPrice: '',
+    category: '',
+    level: 'beginner',
+    tags: '',
+    status: 'draft',
+  });
 
+  // بارگذاری دسته‌بندی‌ها – درست با useEffect
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchCategories = async () => {
       try {
-        const data = await api.courses.getMyCourses();
-        setCourses(data);
+        const data = await api.categories.getAll();
+        setCategories(data);
       } catch (err) {
-        toast.error('خطا در دریافت دوره‌ها');
+        console.error(err);
+        toast.error('خطا در دریافت دسته‌بندی‌ها');
       } finally {
-        setLoading(false);
+        setLoadingCats(false);
       }
     };
-    fetchCourses();
+    fetchCategories();
   }, []);
 
-  const handleDelete = async (courseId) => {
-    if (!confirm('آیا از حذف این دوره مطمئن هستید؟')) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     try {
-      await api.courses.delete(courseId);
-      setCourses(courses.filter(c => c._id !== courseId));
-      toast.success('دوره حذف شد');
+      const data = {
+        ...form,
+        price: parseFloat(form.price),
+        discountPrice: form.discountPrice ? parseFloat(form.discountPrice) : undefined,
+        tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+      };
+      const course = await api.courses.create(data);
+      toast.success('دوره با موفقیت ایجاد شد');
+      router.push(`/instructor/courses/${course._id}/curriculum`);
     } catch (err) {
       toast.error(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading) return <div>در حال بارگذاری...</div>;
-  if (courses.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 mb-4">شما هنوز دوره‌ای ایجاد نکرده‌اید.</p>
-        <Link href="/instructor/courses/new">
-          <Button>ایجاد دوره جدید</Button>
-        </Link>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">دوره‌های من</h1>
-        <Link href="/instructor/courses/new">
-          <Button>+ دوره جدید</Button>
-        </Link>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {courses.map(course => (
-          <Card key={course._id}>
-            <CardHeader>
-              <CardTitle className="line-clamp-1">{course.title}</CardTitle>
-              <CardDescription>
-                <div className="flex gap-2 mt-1">
-                  <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                    {course.status === 'published' ? 'منتشر شده' : 'پیش‌نویس'}
-                  </span>
-                  <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                    {course.students?.length || 0} دانشجو
-                  </span>
-                </div>
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 line-clamp-2">{course.shortDescription || course.description}</p>
-              <div className="mt-2 font-bold text-primary">
-                {course.discountPrice ? (
-                  <>
-                    <span>{course.discountPrice.toLocaleString()} تومان</span>
-                    <span className="line-through text-gray-400 mr-2">{course.price.toLocaleString()}</span>
-                  </>
+    <div className="max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">ایجاد دوره جدید</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <Label htmlFor="title">عنوان دوره</Label>
+          <Input id="title" value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} required />
+        </div>
+        <div>
+          <Label htmlFor="shortDescription">توضیح کوتاه</Label>
+          <Input id="shortDescription" value={form.shortDescription} onChange={(e) => setForm({...form, shortDescription: e.target.value})} />
+        </div>
+        <div>
+          <Label htmlFor="description">توضیحات کامل</Label>
+          <Textarea id="description" rows={5} value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} required />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="price">قیمت (تومان)</Label>
+            <Input id="price" type="number" value={form.price} onChange={(e) => setForm({...form, price: e.target.value})} required />
+          </div>
+          <div>
+            <Label htmlFor="discountPrice">قیمت تخفیف‌خورده (اختیاری)</Label>
+            <Input id="discountPrice" type="number" value={form.discountPrice} onChange={(e) => setForm({...form, discountPrice: e.target.value})} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="category">دسته‌بندی</Label>
+            <Select value={form.category} onValueChange={(val) => setForm({...form, category: val})}>
+              <SelectTrigger>
+                <SelectValue placeholder="انتخاب کنید" />
+              </SelectTrigger>
+              <SelectContent>
+                {loadingCats ? (
+                  <SelectItem value="loading" disabled>در حال بارگذاری...</SelectItem>
                 ) : (
-                  <span>{course.price.toLocaleString()} تومان</span>
+                  categories.map(cat => (
+                    <SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>
+                  ))
                 )}
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between gap-2">
-              <Button variant="outline" size="sm" onClick={() => router.push(`/course/${course.slug}`)}>
-                <Eye className="w-4 h-4 ml-1" /> دیدن
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => router.push(`/instructor/courses/${course._id}/edit`)}>
-                <Edit className="w-4 h-4 ml-1" /> ویرایش
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => router.push(`/instructor/courses/${course._id}/curriculum`)}>
-                <BookOpen className="w-4 h-4 ml-1" /> سرفصل‌ها
-              </Button>
-              <Button variant="destructive" size="sm" onClick={() => handleDelete(course._id)}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="level">سطح</Label>
+            <Select value={form.level} onValueChange={(val) => setForm({...form, level: val})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="beginner">مبتدی</SelectItem>
+                <SelectItem value="intermediate">متوسط</SelectItem>
+                <SelectItem value="advanced">پیشرفته</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="tags">برچسب‌ها (با کاما جدا کنید)</Label>
+          <Input id="tags" value={form.tags} onChange={(e) => setForm({...form, tags: e.target.value})} placeholder="react, nextjs, javascript" />
+        </div>
+        <div>
+          <Label htmlFor="status">وضعیت</Label>
+          <Select value={form.status} onValueChange={(val) => setForm({...form, status: val})}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="draft">پیش‌نویس</SelectItem>
+              <SelectItem value="teaching">در حال تدریس</SelectItem>
+              <SelectItem value="prerelease">پیش‌فروش</SelectItem>
+              <SelectItem value="completed">تکمیل شده</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button type="submit" disabled={loading}>ایجاد دوره</Button>
+      </form>
     </div>
   );
 }
