@@ -1,5 +1,6 @@
 // components/course/CourseCard.jsx
 import Link from 'next/link';
+import Image from 'next/image'; // (Fixed: import Next.js Image component)
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, Clock } from 'lucide-react';
@@ -12,13 +13,19 @@ export default function CourseCard({ course }) {
     <Link href={`/courses/${course.slug}`}>
       <Card className="h-full overflow-hidden group hover:shadow-lg transition-all duration-300 cursor-pointer">
         <div className="relative aspect-video overflow-hidden bg-muted">
-          <img
+          {/* (Fixed: replace <img> with Next.js <Image> component) */}
+          <Image
             src={course.coverImage || '/default-course.jpg'}
             alt={course.title}
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            priority={false}
           />
           {course.level && (
-            <Badge className="absolute top-2 right-2 bg-primary/90">{course.level}</Badge>
+            <Badge className="absolute top-2 right-2 bg-primary/90 text-primary-foreground">
+              {course.level === 'beginner' ? 'مبتدی' : course.level === 'intermediate' ? 'متوسط' : 'پیشرفته'}
+            </Badge>
           )}
         </div>
         <CardHeader>
@@ -46,7 +53,7 @@ export default function CourseCard({ course }) {
               <span className="text-lg font-bold text-primary">{finalPrice.toLocaleString()} تومان</span>
             )}
           </div>
-          <Badge variant="outline">مشاهده دوره</Badge>
+          <Badge variant="outline" className="border-primary/30">مشاهده دوره</Badge>
         </CardFooter>
       </Card>
     </Link>
