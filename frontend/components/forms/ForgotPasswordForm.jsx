@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -21,9 +22,9 @@ export default function ForgotPasswordForm() {
     try {
       await api.auth.forgotPassword(email);
       setSubmitted(true);
-      toast.success('Reset link sent to your email');
+      toast.success('لینک بازیابی به ایمیل شما ارسال شد');
     } catch (err) {
-      toast.error(err.message || 'Failed to send reset link');
+      toast.error(err.message || 'خطا در ارسال لینک بازیابی');
     } finally {
       setLoading(false);
     }
@@ -31,16 +32,16 @@ export default function ForgotPasswordForm() {
 
   if (submitted) {
     return (
-      <Card className="w-full max-w-md mx-auto shadow-lg">
+      <Card className="w-full max-w-md mx-auto shadow-lg border-border">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Check your email</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">ایمیل خود را بررسی کنید</CardTitle>
           <CardDescription className="text-center">
-            {"We've sent a password reset link to "}{email}{". Please check your inbox."}
+            لینک بازیابی رمز عبور به {email} ارسال شد. لطفاً ایمیل خود را بررسی کنید.
           </CardDescription>
         </CardHeader>
         <CardFooter>
           <Button variant="outline" className="w-full" onClick={() => router.push('/login')}>
-            Back to Login
+            بازگشت به ورود
           </Button>
         </CardFooter>
       </Card>
@@ -48,21 +49,21 @@ export default function ForgotPasswordForm() {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
+    <Card className="w-full max-w-md mx-auto shadow-lg border-border">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Forgot password?</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">فراموشی رمز عبور؟</CardTitle>
         <CardDescription className="text-center">
-          {"Enter your email address and we'll send you a link to reset your password."}
+          ایمیل خود را وارد کنید تا لینک بازیابی برای شما ارسال شود.
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">ایمیل</Label>
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="example@mail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -72,12 +73,11 @@ export default function ForgotPasswordForm() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Sending...' : 'Send reset link'}
+            {loading ? 'در حال ارسال...' : 'ارسال لینک بازیابی'}
           </Button>
           <div className="text-sm text-center text-muted-foreground">
-            {"Remember your password? "}
             <Link href="/login" className="text-primary hover:underline">
-              Back to login
+              بازگشت به ورود
             </Link>
           </div>
         </CardFooter>

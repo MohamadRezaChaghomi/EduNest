@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -21,21 +22,21 @@ export default function ResetPasswordForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error('رمز عبور و تکرار آن مطابقت ندارند');
       return;
     }
     if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error('رمز عبور باید حداقل ۶ کاراکتر باشد');
       return;
     }
     setLoading(true);
     try {
       await api.auth.resetPassword(token, password);
       setResetDone(true);
-      toast.success('Password reset successful. Please login.');
+      toast.success('رمز عبور با موفقیت بازنشانی شد');
       setTimeout(() => router.push('/login'), 2000);
     } catch (err) {
-      toast.error(err.message || 'Failed to reset password');
+      toast.error(err.message || 'خطا در بازنشانی رمز عبور');
     } finally {
       setLoading(false);
     }
@@ -43,32 +44,32 @@ export default function ResetPasswordForm() {
 
   if (resetDone) {
     return (
-      <Card className="w-full max-w-md mx-auto shadow-lg">
+      <Card className="w-full max-w-md mx-auto shadow-lg border-border">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Password reset successful</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">بازنشانی رمز عبور موفق</CardTitle>
           <CardDescription className="text-center">
-            You can now login with your new password.
+            اکنون می‌توانید با رمز عبور جدید خود وارد شوید.
           </CardDescription>
         </CardHeader>
         <CardFooter>
-          <Button className="w-full" onClick={() => router.push('/login')}>Go to Login</Button>
+          <Button className="w-full" onClick={() => router.push('/login')}>ورود به حساب</Button>
         </CardFooter>
       </Card>
     );
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
+    <Card className="w-full max-w-md mx-auto shadow-lg border-border">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Set new password</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">تنظیم رمز عبور جدید</CardTitle>
         <CardDescription className="text-center">
-          Enter your new password below.
+          رمز عبور جدید خود را وارد کنید.
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="password">New Password</Label>
+            <Label htmlFor="password">رمز عبور جدید</Label>
             <Input
               id="password"
               type="password"
@@ -80,7 +81,7 @@ export default function ResetPasswordForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+            <Label htmlFor="confirmPassword">تکرار رمز عبور جدید</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -94,11 +95,11 @@ export default function ResetPasswordForm() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Resetting...' : 'Reset password'}
+            {loading ? 'در حال بازنشانی...' : 'بازنشانی رمز عبور'}
           </Button>
           <div className="text-sm text-center">
             <Link href="/login" className="text-primary hover:underline">
-              Back to login
+              بازگشت به ورود
             </Link>
           </div>
         </CardFooter>

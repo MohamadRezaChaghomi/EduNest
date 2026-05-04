@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -20,29 +21,28 @@ export default function RequestOtpForm() {
     setLoading(true);
     try {
       await requestOtp(phone);
-      toast.success('Verification code sent to your phone');
-      // store phone in sessionStorage to use in verify page
+      toast.success('کد تأیید به شماره شما ارسال شد');
       sessionStorage.setItem('otpPhone', phone);
       router.push('/verify-otp');
     } catch (err) {
-      toast.error(err.message || 'Failed to send code');
+      toast.error(err.message || 'خطا در ارسال کد');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
+    <Card className="w-full max-w-md mx-auto shadow-lg border-border">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Login with OTP</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">ورود با کد یکبارمصرف</CardTitle>
         <CardDescription className="text-center">
-          Enter your phone number to receive a verification code
+          شماره موبایل خود را وارد کنید تا کد تأیید برای شما ارسال شود.
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
+            <Label htmlFor="phone">شماره موبایل</Label>
             <Input
               id="phone"
               type="tel"
@@ -56,12 +56,11 @@ export default function RequestOtpForm() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Sending...' : 'Send verification code'}
+            {loading ? 'در حال ارسال...' : 'ارسال کد تأیید'}
           </Button>
           <div className="text-sm text-center text-muted-foreground">
-            {"Back to "}
             <Link href="/login" className="text-primary hover:underline">
-              Login with password
+              ورود با رمز عبور
             </Link>
           </div>
         </CardFooter>

@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -17,37 +18,37 @@ export default function ChangePasswordForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
+      toast.error('رمز عبور جدید با تکرار آن مطابقت ندارد');
       return;
     }
     if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error('رمز عبور باید حداقل ۶ کاراکتر باشد');
       return;
     }
     setLoading(true);
     try {
       await changePassword({ currentPassword, newPassword });
-      toast.success('Password changed successfully');
+      toast.success('رمز عبور با موفقیت تغییر کرد');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
-      toast.error(err.message || 'Failed to change password');
+      toast.error(err.message || 'خطا در تغییر رمز عبور');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card className="max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto border-border shadow-lg">
       <CardHeader>
-        <CardTitle>Change Password</CardTitle>
-        <CardDescription>Update your password</CardDescription>
+        <CardTitle>تغییر رمز عبور</CardTitle>
+        <CardDescription>رمز عبور خود را به روز کنید</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="currentPassword">Current Password</Label>
+            <Label htmlFor="currentPassword">رمز عبور فعلی</Label>
             <Input
               id="currentPassword"
               type="password"
@@ -58,7 +59,7 @@ export default function ChangePasswordForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="newPassword">New Password</Label>
+            <Label htmlFor="newPassword">رمز عبور جدید</Label>
             <Input
               id="newPassword"
               type="password"
@@ -69,7 +70,7 @@ export default function ChangePasswordForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+            <Label htmlFor="confirmPassword">تکرار رمز عبور جدید</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -81,7 +82,7 @@ export default function ChangePasswordForm() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" disabled={loading}>Change Password</Button>
+          <Button type="submit" disabled={loading} className="w-full">تغییر رمز عبور</Button>
         </CardFooter>
       </form>
     </Card>

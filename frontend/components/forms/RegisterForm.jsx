@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -23,45 +24,44 @@ export default function RegisterForm() {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error('رمز عبور و تکرار آن مطابقت ندارند');
       return;
     }
     if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error('رمز عبور باید حداقل ۶ کاراکتر باشد');
       return;
     }
-    // optional phone validation (digits only, 10-15)
     if (!/^\d{10,15}$/.test(phone)) {
-      toast.error('Phone number must be 10-15 digits');
+      toast.error('شماره موبایل باید ۱۰ تا ۱۵ رقم باشد');
       return;
     }
 
     setLoading(true);
     try {
-      await register({ name, email, phone, password }); // role is optional, backend defaults to 'user'
-      toast.success('Account created successfully');
-      router.push('/profile');
+      await register({ name, email, phone, password });
+      toast.success('حساب کاربری با موفقیت ایجاد شد');
+      router.push('/dashboard');
     } catch (err) {
-      toast.error(err.message || 'Registration failed');
+      toast.error(err.message || 'خطا در ثبت‌نام');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto border-border shadow-lg">
       <CardHeader>
-        <CardTitle>Create an account</CardTitle>
-        <CardDescription>Sign up to get started</CardDescription>
+        <CardTitle>ایجاد حساب کاربری</CardTitle>
+        <CardDescription>برای شروع ثبت‌نام کنید</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name">نام و نام خانوادگی</Label>
             <Input
               id="name"
               type="text"
-              placeholder="John Doe"
+              placeholder="علی رضایی"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -69,11 +69,11 @@ export default function RegisterForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">ایمیل</Label>
             <Input
               id="email"
               type="email"
-              placeholder="john@example.com"
+              placeholder="ali@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -81,7 +81,7 @@ export default function RegisterForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
+            <Label htmlFor="phone">شماره موبایل</Label>
             <Input
               id="phone"
               type="tel"
@@ -91,10 +91,10 @@ export default function RegisterForm() {
               required
               disabled={loading}
             />
-            <p className="text-xs text-muted-foreground">10-15 digits, e.g., 09123456789</p>
+            <p className="text-xs text-muted-foreground">مثال: 09123456789 (۱۰ تا ۱۵ رقم)</p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">رمز عبور</Label>
             <Input
               id="password"
               type="password"
@@ -106,7 +106,7 @@ export default function RegisterForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword">تکرار رمز عبور</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -120,12 +120,12 @@ export default function RegisterForm() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Creating account...' : 'Sign up'}
+            {loading ? 'در حال ایجاد حساب...' : 'ثبت‌نام'}
           </Button>
           <div className="text-sm text-center text-muted-foreground">
-            {"Already have an account? "}
+            حساب کاربری دارید؟{' '}
             <Link href="/login" className="text-primary hover:underline">
-              Login
+              وارد شوید
             </Link>
           </div>
           <div className="relative">
@@ -133,7 +133,7 @@ export default function RegisterForm() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or</span>
+              <span className="bg-background px-2 text-muted-foreground">یا</span>
             </div>
           </div>
           <Button
@@ -142,7 +142,7 @@ export default function RegisterForm() {
             className="w-full"
             onClick={() => router.push('/request-otp')}
           >
-            Register with OTP
+            ثبت‌نام با کد یکبارمصرف
           </Button>
         </CardFooter>
       </form>

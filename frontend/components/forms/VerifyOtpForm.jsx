@@ -1,11 +1,10 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
-
-// Import Shadcn UI components (مسیرهای صحیح را با توجه به پروژه خود تنظیم کنید)
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,68 +14,59 @@ export default function VerifyOtpForm() {
   const [code, setCode] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [phone, setPhone] = useState('');
-  const [isClient, setIsClient] = useState(false);
-  
+  const [phone, setPhone] = useState(() => {
+    // خواندن مقدار اولیه از sessionStorage در سمت کلاینت
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('otpPhone') || '';
+    }
+    return '';
+  });
   const { verifyOtp } = useAuth();
   const router = useRouter();
-  const isMounted = useRef(true);
 
+  // اگر تلفن وجود نداشت، به صفحه درخواست OTP هدایت کنیم
   useEffect(() => {
-    isMounted.current = true;
-    const fetchPhone = () => {
-      if (!isMounted.current) return;
-      const storedPhone = sessionStorage.getItem('otpPhone');
-      if (storedPhone) {
-        setPhone(storedPhone);
-      } else {
-        router.push('/request-otp');
-      }
-      setIsClient(true); // فقط بعد از بررسی نهایی، رندر مشتری را فعال کنید
-    };
-
-    fetchPhone();
-
-    return () => {
-      isMounted.current = false;
-    };
-  }, [router]);
+    if (!phone) {
+      router.push('/request-otp');
+    }
+  }, [phone, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!code || code.length !== 6) {
-      toast.error('Please enter a valid 6-digit code');
+      toast.error('لطفاً یک کد ۶ رقمی معتبر وارد کنید');
       return;
     }
     setLoading(true);
     try {
       await verifyOtp(phone, code, rememberMe);
-      toast.success('Logged in successfully');
+      toast.success('ورود موفقیت‌آمیز');
       sessionStorage.removeItem('otpPhone');
-      router.push('/profile');
+      router.push('/dashboard');
     } catch (err) {
-      toast.error(err.message || 'Invalid code');
+      toast.error(err.message || 'کد نامعتبر است');
     } finally {
       setLoading(false);
     }
   };
 
-  if (!isClient) {
-    return null; // از یک اسپینر لودینگ هم می‌توانید استفاده کنید
+  // اگر تلفن وجود نداشته باشد، در حال هدایت هستیم
+  if (!phone) {
+    return null; // یا یک اسپینر
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
+    <Card className="w-full max-w-md mx-auto shadow-lg border-border">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Verify Code</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">تأیید کد</CardTitle>
         <CardDescription className="text-center">
-          Enter the 6-digit code sent to {phone}
+          کد ۶ رقمی ارسال شده به {phone} را وارد کنید
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="code">Verification Code</Label>
+            <Label htmlFor="code">کد تأیید</Label>
             <Input
               id="code"
               type="text"
@@ -94,20 +84,20 @@ export default function VerifyOtpForm() {
               id="rememberMe"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300"
+              className="w-4 h-4 rounded border-border accent-primary"
             />
             <Label htmlFor="rememberMe" className="text-sm cursor-pointer">
-              Remember me
+              مرا به خاطر بسپار
             </Label>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Verifying...' : 'Verify & Login'}
+            {loading ? 'در حال بررسی...' : 'تأیید و ورود'}
           </Button>
           <div className="text-sm text-center">
             <Link href="/request-otp" className="text-primary hover:underline">
-              Request new code
+              درخواست کد جدید
             </Link>
           </div>
         </CardFooter>
