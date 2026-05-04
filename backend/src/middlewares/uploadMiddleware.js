@@ -1,27 +1,35 @@
-import multer from 'multer';
-import path from 'path';
+// backend/src/middleware/upload.js
 
-// فقط در حافظه (memory) ذخیره می‌شود تا مستقیماً به Cloudinary برود
+const multer = require('multer');
+const path = require('path');
+
+// Configure storage (memory storage for Cloudinary)
 const storage = multer.memoryStorage();
 
-// فیلتر نوع فایل
+// File filter for images and videos
 const fileFilter = (req, file, cb) => {
-  const allowedImageTypes = /jpeg|jpg|png|webp/;
-  const allowedVideoTypes = /mp4|mov|avi|mkv/;
-  const extname = path.extname(file.originalname).toLowerCase();
-  const mimeType = file.mimetype;
+  const allowedImageTypes = /jpeg|jpg|png|gif|webp/;
+  const allowedVideoTypes = /mp4|mov|avi|mkv|webm/;
 
-  if (allowedImageTypes.test(extname) && mimeType.startsWith('image/')) {
-    cb(null, true);
-  } else if (allowedVideoTypes.test(extname) && mimeType.startsWith('video/')) {
-    cb(null, true);
+  const extname = allowedImageTypes.test(path.extname(file.originalname).toLowerCase()) ||
+                  allowedVideoTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowedImageTypes.test(file.mimetype) ||
+                   allowedVideoTypes.test(file.mimetype);
+
+  if (extname && mimetype) {
+    return cb(null, true);
   } else {
-    cb(new Error('فقط فرمت‌های تصویر (jpeg, jpg, png, webp) و ویدیو (mp4, mov, avi, mkv) مجاز هستند'), false);
+    cb(new Error('Only images (jpeg, jpg, png, gif, webp) and videos (mp4, mov, avi, mkv, webm) are allowed'));
   }
 };
 
-export const upload = multer({
+// Multer upload instance
+const upload = multer({
   storage,
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100 مگابایت (برای ویدیو)
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB max for videos
+  },
   fileFilter,
 });
+
+module.exports = upload;

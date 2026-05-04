@@ -1,7 +1,12 @@
+// backend/src/middleware/auth.js
+
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { isUserBanned } = require('../controllers/adminController');
 
+/**
+ * Protect routes - verify JWT token from cookie or Authorization header
+ */
 const protect = async (req, res, next) => {
   let token;
 
@@ -15,34 +20,70 @@ const protect = async (req, res, next) => {
   }
 
   if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
+    return res.status(401).json({
+      success: false,
+      message: 'Not authorized. No token provided.',
+    });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = await User.findById(decoded.id).select('-password');
-    if (!req.user) return res.status(401).json({ message: 'User not found' });
+
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found.',
+      });
+    }
 
     const banned = await isUserBanned(req.user._id);
-    if (banned) return res.status(403).json({ message: 'Your account has been banned.' });
+    if (banned) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been banned.',
+      });
+    }
 
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Token expired' });
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired. Please login again.',
+      });
     }
-    return res.status(401).json({ message: 'Invalid token' });
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid token.',
+    });
   }
 };
 
+/**
+ * Allow only admin users
+ */
 const adminOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') return next();
-  return res.status(403).json({ message: 'Access denied. Admin only.' });
+  if (req.user && req.user.role === 'admin') {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    message: 'Access denied. Admin only.',
+  });
 };
 
+/**
+ * Allow instructor or admin users
+ */
 const instructorOnly = (req, res, next) => {
-  if (req.user && (req.user.role === 'instructor' || req.user.role === 'admin')) return next();
-  return res.status(403).json({ message: 'Access denied. Instructor or admin only.' });
+  if (req.user && (req.user.role === 'instructor' || req.user.role === 'admin')) {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    message: 'Access denied. Instructor or admin only.',
+  });
 };
 
 module.exports = { protect, adminOnly, instructorOnly };
