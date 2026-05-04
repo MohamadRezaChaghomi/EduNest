@@ -1,4 +1,4 @@
-// frontend/app/page.js
+// app/page.js
 import HeroSection from '@/components/home/HeroSection';
 import CategoryList from '@/components/home/CategoryList';
 import PopularCourses from '@/components/home/PopularCourses';
@@ -7,7 +7,7 @@ import StatsSection from '@/components/home/StatsSection';
 import { api } from '@/lib/api';
 
 export default async function HomePage() {
-
+  // Fetch data in parallel with error fallbacks
   const [categories, popularCourses, latestCourses] = await Promise.all([
     api.categories.getAll().catch(() => []),
     api.courses.getPopular({ limit: 6 }).catch(() => ({ courses: [] })),
@@ -15,7 +15,7 @@ export default async function HomePage() {
   ]);
 
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-hidden bg-background">
       <HeroSection />
       <CategoryList categories={categories} />
       <PopularCourses courses={popularCourses.courses || popularCourses} />

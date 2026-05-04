@@ -1,4 +1,4 @@
-// frontend/app/layout.js
+// app/layout.js
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { CartProvider } from '@/components/cart/CartProvider';
@@ -6,7 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Toaster } from 'sonner';
 
-import './globals.css'; 
+import './globals.css';
 
 export const metadata = {
   title: 'EduNest | آموزش آنلاین',
@@ -17,7 +17,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
-      <body>
+      <body className="bg-background text-foreground antialiased">
         <ThemeProvider>
           <AuthProvider>
             <CartProvider>

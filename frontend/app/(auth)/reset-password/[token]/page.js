@@ -9,7 +9,7 @@ export const metadata = {
 export default function ResetPasswordPage({ params }) {
   const { token } = params;
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-md mx-auto">
       <ResetPasswordForm token={token} />
     </div>
   );
