@@ -1,15 +1,10 @@
+// app/courses/CourseFilters.jsx
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { useDebouncedCallback } from 'use-debounce';
@@ -21,7 +16,6 @@ export function CourseFilters({ initialFilters = {}, categories = [] }) {
   const [category, setCategory] = useState(initialFilters.category || '');
   const [level, setLevel] = useState(initialFilters.level || '');
 
-  // Debounced URL update to prevent too many navigation calls
   const updateFilters = useDebouncedCallback((search, cat, lvl) => {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
@@ -54,7 +48,6 @@ export function CourseFilters({ initialFilters = {}, categories = [] }) {
           />
         </div>
       </div>
-
       <div className="w-48">
         <Select value={category} onValueChange={setCategory}>
           <SelectTrigger>
@@ -70,7 +63,6 @@ export function CourseFilters({ initialFilters = {}, categories = [] }) {
           </SelectContent>
         </Select>
       </div>
-
       <div className="w-48">
         <Select value={level} onValueChange={setLevel}>
           <SelectTrigger>
@@ -84,7 +76,6 @@ export function CourseFilters({ initialFilters = {}, categories = [] }) {
           </SelectContent>
         </Select>
       </div>
-
       <Button variant="ghost" onClick={handleClearFilters}>
         پاک کردن فیلترها
       </Button>
