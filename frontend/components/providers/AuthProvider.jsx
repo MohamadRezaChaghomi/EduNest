@@ -1,5 +1,6 @@
 'use client';
-import { createContext, useEffect, useState } from 'react';
+
+import { createContext, useEffect, useState, useRef } from 'react';
 import { api, setToken, removeToken } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -8,34 +9,37 @@ export const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const isMounted = useRef(true);
 
-  // فقط برای بار اول که صفحه لود می‌شود
+  // Fetch current user on mount (only once)
   useEffect(() => {
-    let isMounted = true;
+    isMounted.current = true;
     const fetchUser = async () => {
       try {
         const res = await api.auth.me();
-        if (isMounted) setUser(res.user);
+        if (isMounted.current) setUser(res.user);
       } catch (error) {
-        if (error.status !== 401 && isMounted) {
+        if (error.status !== 401 && isMounted.current) {
           console.error('Failed to fetch user:', error);
         }
-        if (isMounted) setUser(null);
+        if (isMounted.current) setUser(null);
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted.current) setLoading(false);
       }
     };
     fetchUser();
-    return () => { isMounted = false; };
+
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
   const login = async (identifier, password, rememberMe = false) => {
     const res = await api.auth.login({ identifier, password, rememberMe });
     if (res.token) setToken(res.token);
-    // مستقیماً از پاسخ سرور user را بگیر
-    if (res.user) setUser(res.user);
-    else {
-      // fallback (در صورت نبودن user در پاسخ)
+    if (res.user) {
+      setUser(res.user);
+    } else {
       const userRes = await api.auth.me();
       setUser(userRes.user);
     }
@@ -45,9 +49,9 @@ export function AuthProvider({ children }) {
   const register = async (data) => {
     const res = await api.auth.register(data);
     if (res.token) setToken(res.token);
-    // مستقیماً از پاسخ سرور user را بگیر
-    if (res.user) setUser(res.user);
-    else {
+    if (res.user) {
+      setUser(res.user);
+    } else {
       const userRes = await api.auth.me();
       setUser(userRes.user);
     }
@@ -58,7 +62,7 @@ export function AuthProvider({ children }) {
     try {
       await api.auth.logout();
     } catch (error) {
-      // ignore
+      // ignore network errors
     } finally {
       removeToken();
       setUser(null);
@@ -72,17 +76,17 @@ export function AuthProvider({ children }) {
   };
 
   const updateProfile = async (data) => {
-    const res = await api.auth.updateProfile(data);
+    await api.auth.updateProfile(data);
     const userRes = await api.auth.me();
     setUser(userRes.user);
-    toast.success('Profile updated successfully');
-    return res;
+    toast.success('پروفایل با موفقیت به‌روزرسانی شد');
+    return userRes;
   };
 
   const changePassword = async (data) => {
-    const res = await api.auth.changePassword(data);
-    toast.success('Password changed successfully');
-    return res;
+    await api.auth.changePassword(data);
+    toast.success('رمز عبور با موفقیت تغییر کرد');
+    return data;
   };
 
   const requestOtp = async (phone) => {
@@ -92,8 +96,9 @@ export function AuthProvider({ children }) {
   const verifyOtp = async (phone, code, rememberMe) => {
     const res = await api.auth.verifyOtp(phone, code, rememberMe);
     if (res.token) setToken(res.token);
-    if (res.user) setUser(res.user);
-    else {
+    if (res.user) {
+      setUser(res.user);
+    } else {
       const userRes = await api.auth.me();
       setUser(userRes.user);
     }
