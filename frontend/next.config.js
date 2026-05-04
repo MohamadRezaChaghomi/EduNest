@@ -12,6 +12,8 @@ const nextConfig = {
       },
     ],
   },
+  // در صورت نیاز به ترجمه مسیرها می‌توانید i18n را اضافه کنید، اما برای RTL نیاز نیست
+  reactStrictMode: true,
 };
 
 module.exports = nextConfig;
