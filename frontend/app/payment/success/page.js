@@ -1,9 +1,11 @@
 // app/payment/success/page.js
 'use client';
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -13,49 +15,64 @@ export default function PaymentSuccessPage() {
   const sessionId = searchParams.get('session_id');
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState(null);
+  const isMounted = useRef(true);
 
   useEffect(() => {
+    isMounted.current = true;
     const verifyPayment = async () => {
       if (!sessionId) {
-        toast.error('اطلاعات پرداخت یافت نشد');
+        if (isMounted.current) toast.error('اطلاعات پرداخت یافت نشد');
         router.push('/courses');
         return;
       }
       try {
-        // در بک‌اند باید یک endpoint برای تأیید پرداخت با session_id داشته باشید
         const data = await api.payment.verifySession(sessionId);
-        setOrder(data.order);
-        toast.success('پرداخت با موفقیت انجام شد');
+        if (isMounted.current) {
+          setOrder(data.order);
+          toast.success('پرداخت با موفقیت انجام شد');
+        }
       } catch (err) {
-        toast.error(err.message || 'خطا در تأیید پرداخت');
+        if (isMounted.current) toast.error(err.message || 'خطا در تأیید پرداخت');
       } finally {
-        setLoading(false);
+        if (isMounted.current) setLoading(false);
       }
     };
     verifyPayment();
+    return () => { isMounted.current = false; };
   }, [sessionId, router]);
 
   if (loading) {
-    return <div className="flex justify-center items-center h-screen">در حال تأیید پرداخت...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-background">
+        <div className="text-foreground">در حال تأیید پرداخت...</div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
-        <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold mb-2">پرداخت موفق</h1>
-        <p className="text-gray-600 mb-6">
-          سفارش شما با موفقیت ثبت شد. می‌توانید دوره‌های خریداری شده را در پنل کاربری مشاهده کنید.
-        </p>
-        <div className="space-y-3">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4" dir="rtl">
+      <Card className="w-full max-w-md border-border shadow-lg">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <CheckCircle className="w-16 h-16 text-green-600 dark:text-green-400" />
+          </div>
+          <CardTitle className="text-2xl text-foreground">پرداخت موفق</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            سفارش شما با موفقیت ثبت شد.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-center text-muted-foreground">
+          <p>می‌توانید دوره‌های خریداری شده را در پنل کاربری مشاهده کنید.</p>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-3">
           <Button onClick={() => router.push('/dashboard/my-courses')} className="w-full">
             مشاهده دوره‌های من
           </Button>
           <Button variant="outline" onClick={() => router.push('/courses')} className="w-full">
             بازگشت به فروشگاه
           </Button>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
