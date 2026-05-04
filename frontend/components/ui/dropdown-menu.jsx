@@ -2,8 +2,7 @@
 
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { Check, ChevronRight, Circle } from "lucide-react";
-
+import { Check, ChevronLeft, ChevronRight, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
@@ -24,7 +23,10 @@ const DropdownMenuSubTrigger = React.forwardRef(({ className, inset, children, .
     {...props}
   >
     {children}
-    <ChevronRight className="ml-auto h-4 w-4" />
+    {/* RTL-aware arrow: use ChevronLeft in RTL, ChevronRight in LTR */}
+    <span className="[html[dir='rtl']_&]:mr-auto [html[dir='ltr']_&]:ml-auto">
+      {document.documentElement.dir === 'rtl' ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+    </span>
   </DropdownMenuPrimitive.SubTrigger>
 ));
 DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName;

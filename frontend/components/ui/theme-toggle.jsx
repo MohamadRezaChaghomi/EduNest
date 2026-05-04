@@ -7,7 +7,6 @@ import { Sun, Moon } from 'lucide-react';
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
 
-  // If resolvedTheme is undefined (server-side), render a placeholder button
   if (resolvedTheme === undefined) {
     return (
       <Button variant="ghost" size="icon" className="opacity-0 pointer-events-none">
@@ -25,11 +24,7 @@ export function ThemeToggle() {
       onClick={() => setTheme(currentTheme === 'light' ? 'dark' : 'light')}
       className="transition-all duration-200"
     >
-      {currentTheme === 'light' ? (
-        <Sun className="h-5 w-5 transition-all" />
-      ) : (
-        <Moon className="h-5 w-5 transition-all" />
-      )}
+      {currentTheme === 'light' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
       <span className="sr-only">Toggle theme</span>
     </Button>
   );
