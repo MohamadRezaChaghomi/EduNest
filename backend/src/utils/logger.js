@@ -1,15 +1,17 @@
+// backend/src/utils/logger.js
+
 const Log = require('../models/Log');
 
 /**
  * Create an audit log entry
  * @param {Object} data
- * @param {string} data.action - one of the enum values
- * @param {string} data.status - SUCCESS, FAILED, PENDING
- * @param {mongoose.Types.ObjectId} data.user - user ID (optional)
- * @param {string} data.ip - IP address
- * @param {string} data.userAgent - browser user agent
- * @param {Object} data.details - any extra info
- * @param {mongoose.Types.ObjectId} data.performedBy - admin who performed action (optional)
+ * @param {string} data.action - Action name (e.g., 'LOGIN_SUCCESS', 'USER_BANNED')
+ * @param {string} [data.status] - SUCCESS, FAILED, PENDING (default SUCCESS)
+ * @param {string|ObjectId} [data.user] - User ID (optional)
+ * @param {string} [data.ip] - Client IP address
+ * @param {string} [data.userAgent] - Browser user agent
+ * @param {any} [data.details] - Extra info (string or object)
+ * @param {string|ObjectId} [data.performedBy] - Admin who performed action (optional)
  */
 const createLog = async (data) => {
   try {
@@ -23,7 +25,8 @@ const createLog = async (data) => {
       performedBy: data.performedBy || null,
     });
   } catch (error) {
-    console.error('Error creating audit log:', error.message);
+    // Never throw from logger to avoid breaking main flow
+    console.error('❌ Error creating audit log:', error.message);
   }
 };
 
