@@ -47,7 +47,7 @@ export default function TicketDetailPage() {
       await api.tickets.addMessage(id, newMessage);
       toast.success('پیام ارسال شد');
       setNewMessage('');
-      // Manual refresh: re-fetch ticket
+      // بارگذاری مجدد تیکت
       const updated = await api.tickets.getTicketById(id);
       if (isMounted.current) setTicket(updated);
     } catch (err) {
@@ -57,11 +57,13 @@ export default function TicketDetailPage() {
     }
   };
 
-  if (loading) return <div className="text-center py-8">در حال بارگذاری...</div>;
+  if (loading) {
+    return <div className="text-center py-8">در حال بارگذاری...</div>;
+  }
   if (!ticket) return null;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6" dir="rtl">
       <Card>
         <CardHeader>
           <div className="flex justify-between items-start">
@@ -75,40 +77,47 @@ export default function TicketDetailPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {ticket.messages?.map((msg, idx) => (
-            <div key={idx} className={`p-3 rounded-lg ${msg.isStaffReply ? 'bg-primary/10' : 'bg-muted'}`}>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="font-semibold">{msg.sender?.name || 'کاربر'}</span>
-                <span className="text-muted-foreground">
-                  {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
-                </span>
+          {/* پیام اولیه */}
+          <div className="bg-muted p-3 rounded-lg">
+            <div className="flex justify-between text-sm text-muted-foreground mb-1">
+              <span>{ticket.user?.name}</span>
+              <span>{formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true })}</span>
+            </div>
+            <p className="text-foreground">{ticket.messages?.[0]?.message}</p>
+          </div>
+
+          {/* سایر پیام‌ها */}
+          {ticket.messages?.slice(1).map((msg, idx) => (
+            <div
+              key={idx}
+              className={`p-3 rounded-lg ${msg.isStaffReply ? 'bg-primary/10 mr-6' : 'bg-muted ml-6'}`}
+            >
+              <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                <span>{msg.sender?.name}</span>
+                <span>{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}</span>
               </div>
               <p className="text-foreground">{msg.message}</p>
               {msg.isStaffReply && <Badge variant="outline" className="mt-1 text-xs">پاسخ پشتیبانی</Badge>}
             </div>
           ))}
+
+          {/* فرم ارسال پیام جدید (در صورت باز بودن تیکت) */}
+          {ticket.status !== 'closed' && (
+            <div className="pt-4 border-t">
+              <Textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                rows={4}
+                placeholder="پاسخ خود را بنویسید..."
+                disabled={submitting}
+              />
+              <Button onClick={handleSendMessage} disabled={submitting} className="mt-3">
+                {submitting ? 'در حال ارسال...' : 'ارسال پیام'}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {ticket.status !== 'closed' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">ارسال پاسخ جدید</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Textarea
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              rows={4}
-              placeholder="پیام خود را بنویسید..."
-              disabled={submitting}
-            />
-            <Button onClick={handleSendMessage} disabled={submitting}>
-              {submitting ? 'در حال ارسال...' : 'ارسال پیام'}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="flex justify-end">
         <Button variant="outline" onClick={() => router.push('/dashboard/tickets')}>

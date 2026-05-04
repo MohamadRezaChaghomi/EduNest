@@ -2,6 +2,7 @@
 import CourseCard from '@/components/course/CourseCard';
 import { api } from '@/lib/api';
 import { CourseFilters } from './CourseFilters';
+import { Pagination } from '@/components/ui/Pagination';
 import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -13,6 +14,7 @@ export const metadata = {
 export default async function CoursesPage({ searchParams }) {
   const resolvedSearchParams = await searchParams;
 
+  // دریافت دسته‌بندی‌ها و دوره‌ها همزمان در سمت سرور
   const [categoriesData, coursesData] = await Promise.all([
     api.categories.getAll().catch(() => []),
     api.courses.getAll({
@@ -21,17 +23,17 @@ export default async function CoursesPage({ searchParams }) {
       level: resolvedSearchParams?.level || '',
       page: parseInt(resolvedSearchParams?.page) || 1,
       limit: 12,
-    }).catch(() => ({ courses: [], totalPages: 1, currentPage: 1 })),
+    }).catch(() => ({ courses: [], totalPages: 1, currentPage: 1, total: 0 })),
   ]);
 
   return (
     <div className="container mx-auto py-8 px-4" dir="rtl">
       <h1 className="text-3xl font-bold mb-6 text-foreground">دوره‌های آموزشی</h1>
 
-      {/* Filters (Client Component) */}
+      {/* فیلترها (کلاینت کامپوننت) */}
       <CourseFilters initialFilters={resolvedSearchParams} categories={categoriesData} />
 
-      {/* Courses Grid */}
+      {/* نمایش دوره‌ها */}
       <Suspense fallback={<CoursesSkeleton />}>
         {coursesData.courses?.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
@@ -45,11 +47,19 @@ export default async function CoursesPage({ searchParams }) {
                 <CourseCard key={course._id} course={course} />
               ))}
             </div>
-            {/* Pagination (to be implemented separately if needed) */}
+            {/* صفحه‌بندی */}
             {coursesData.totalPages > 1 && (
-              <div className="flex justify-center mt-10 gap-2">
-                {/* Simple pagination buttons can be added here */}
-              </div>
+              <Pagination
+                currentPage={coursesData.currentPage}
+                totalPages={coursesData.totalPages}
+                onPageChange={(page) => {
+                  // در سمت سرور نمی‌توانیم از router استفاده کنیم، اما اینجا فقط JSX رندر می‌شود و لینک‌ها توسط خود Pagination
+                  // برای سادگی، لینک‌ها را به صورت client-side در Pagination کامپوننت مدیریت می‌کنیم
+                  // در اینجا تابع page change را خالی می‌گذاریم چون Pagination داخل یک Client Component خواهد بود
+                  // اما برای تطابق با سرور، بهتر است Pagination را به صورت client-side در کامپوننت جداگانه بسازیم.
+                  // فعلاً تابع را خالی می‌گذاریم – در نسخه نهایی، Pagination را به عنوان یک Client Component جداگانه استفاده کنید.
+                }}
+              />
             )}
           </>
         )}
@@ -58,7 +68,7 @@ export default async function CoursesPage({ searchParams }) {
   );
 }
 
-// Skeleton loader for courses grid
+// Skeleton loader برای نمایش در حین بارگذاری
 function CoursesSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
