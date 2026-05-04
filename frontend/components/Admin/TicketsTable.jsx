@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import Link from 'next/link';
+import { useAsyncEffect } from '@/hooks/useAsyncEffect';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -13,26 +15,27 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
 
 export default function TicketsTable() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchTickets = async () => {
+  useAsyncEffect(async (isMounted) => {
     setLoading(true);
     try {
       const data = await api.admin.getTickets();
-      setTickets(data);
+      if (isMounted.current) {
+        setTickets(data);
+      }
     } catch (err) {
-      toast.error('خطا در بارگذاری تیکت‌ها');
+      if (isMounted.current) {
+        toast.error('خطا در بارگذاری تیکت‌ها');
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
-  };
-
-  useEffect(() => {
-    fetchTickets();
   }, []);
 
   const getStatusLabel = (status) => {

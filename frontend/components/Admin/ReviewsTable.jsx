@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { useAsyncEffect } from '@/hooks/useAsyncEffect';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -18,27 +19,31 @@ export default function ReviewsTable() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchPendingReviews = async () => {
+  const fetchPendingReviews = async (isMounted) => {
     setLoading(true);
     try {
       const data = await api.admin.getPendingReviews();
-      setReviews(data);
+      if (isMounted.current) {
+        setReviews(data);
+      }
     } catch (err) {
-      toast.error('خطا در بارگذاری نظرات');
+      if (isMounted.current) {
+        toast.error('خطا در بارگذاری نظرات');
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
-  useEffect(() => {
-    fetchPendingReviews();
-  }, []);
+  useAsyncEffect(fetchPendingReviews, []);
 
   const handleApprove = async (id) => {
     try {
       await api.reviews.approve(id);
       toast.success('نظر تأیید شد');
-      fetchPendingReviews();
+      await fetchPendingReviews({ current: true }); // manually call with mounted true
     } catch (err) {
       toast.error(err.message);
     }
@@ -49,7 +54,7 @@ export default function ReviewsTable() {
       try {
         await api.reviews.delete(id);
         toast.success('نظر حذف شد');
-        fetchPendingReviews();
+        await fetchPendingReviews({ current: true });
       } catch (err) {
         toast.error(err.message);
       }
@@ -60,7 +65,7 @@ export default function ReviewsTable() {
     try {
       await api.reviews.pin(id);
       toast.success(isPinned ? 'پین برداشته شد' : 'نظر پین شد');
-      fetchPendingReviews();
+      await fetchPendingReviews({ current: true });
     } catch (err) {
       toast.error(err.message);
     }

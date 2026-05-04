@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { useAsyncEffect } from '@/hooks/useAsyncEffect';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -18,27 +19,32 @@ export default function ReportsTable() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchReports = async () => {
+  useAsyncEffect(async (isMounted) => {
     setLoading(true);
     try {
       const data = await api.admin.getReports({ status: 'pending' });
-      setReports(data.data);
+      if (isMounted.current) {
+        setReports(data.data);
+      }
     } catch (err) {
-      toast.error('خطا در بارگذاری گزارش‌ها');
+      if (isMounted.current) {
+        toast.error('خطا در بارگذاری گزارش‌ها');
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
-  };
-
-  useEffect(() => {
-    fetchReports();
   }, []);
 
   const handleResolve = async (reportId, action) => {
     try {
       await api.admin.resolveReport(reportId, { action, adminNote: '' });
       toast.success(action === 'delete' ? 'نظر حذف و گزارش بسته شد' : 'گزارش رد شد');
-      fetchReports();
+      // Refetch using the same logic – we'll just call the API again, but to avoid duplication, we can re-run the effect by using a state trigger.
+      // For simplicity, we'll create a separate fetch function. Or we can use a key. Let's do a refetch function.
+      const data = await api.admin.getReports({ status: 'pending' });
+      setReports(data.data);
     } catch (err) {
       toast.error(err.message);
     }
