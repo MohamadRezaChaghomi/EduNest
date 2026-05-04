@@ -1,14 +1,16 @@
+// app/reset-password/[token]/page.js
 import ResetPasswordForm from '@/components/forms/ResetPasswordForm';
 
 export const metadata = {
-  title: 'Reset Password | EduNest',
-  description: 'Create a new password',
+  title: 'بازیابی رمز عبور | EduNest',
+  description: 'تنظیم رمز جدید',
 };
 
-export default function ResetPasswordPage() {
+export default function ResetPasswordPage({ params }) {
+  const { token } = params;
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4">
-      <ResetPasswordForm />
+    <div className="w-full max-w-md">
+      <ResetPasswordForm token={token} />
     </div>
   );
 }

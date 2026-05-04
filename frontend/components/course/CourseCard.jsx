@@ -1,44 +1,52 @@
-import Image from 'next/image';
+// components/course/CourseCard.jsx
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Users, Clock } from 'lucide-react';
 
 export default function CourseCard({ course }) {
-  const discountPrice = course.discountPrice || course.price;
+  const finalPrice = course.discountPrice || course.price;
   const hasDiscount = course.discountPrice && course.discountPrice < course.price;
+
   return (
-    <Link href={`/course/${course.slug}`}>
-      <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-        <CardHeader className="p-0">
-          <div className="relative w-full h-48">
-            <Image
-              src={course.coverImage || '/default-course.jpg'}
-              alt={course.title}
-              fill
-              className="object-cover rounded-t-lg"
-            />
-          </div>
+    <Link href={`/courses/${course.slug}`}>
+      <Card className="h-full overflow-hidden group hover:shadow-lg transition-all duration-300 cursor-pointer">
+        <div className="relative aspect-video overflow-hidden bg-muted">
+          <img
+            src={course.coverImage || '/default-course.jpg'}
+            alt={course.title}
+            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+          />
+          {course.level && (
+            <Badge className="absolute top-2 right-2 bg-primary/90">{course.level}</Badge>
+          )}
+        </div>
+        <CardHeader>
+          <CardTitle className="line-clamp-2 text-lg">{course.title}</CardTitle>
         </CardHeader>
-        <CardContent className="p-4">
-          <CardTitle className="text-lg line-clamp-2">{course.title}</CardTitle>
-          <p className="text-sm text-gray-500 mt-2 line-clamp-2">{course.shortDescription || course.description}</p>
-          <div className="mt-2 flex items-center gap-2">
-            <Badge variant="secondary">{course.level === 'beginner' ? 'مبتدی' : course.level === 'intermediate' ? 'متوسط' : 'پیشرفته'}</Badge>
-            <Badge variant="outline">{course.category?.name}</Badge>
+        <CardContent>
+          <p className="text-muted-foreground line-clamp-2 text-sm">{course.shortDescription}</p>
+          <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Users size={14} /> {course.enrolledCount || 0}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock size={14} /> {course.duration || 0} دقیقه
+            </span>
           </div>
         </CardContent>
-        <CardFooter className="p-4 pt-0 flex justify-between items-center">
-          <div className="flex items-center gap-2">
+        <CardFooter className="flex justify-between items-center">
+          <div>
             {hasDiscount ? (
-              <>
-                <span className="text-lg font-bold text-green-600">{discountPrice.toLocaleString()} تومان</span>
-                <span className="text-sm line-through text-gray-400">{course.price.toLocaleString()}</span>
-              </>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-primary">{finalPrice.toLocaleString()}</span>
+                <span className="text-sm line-through text-muted-foreground">{course.price.toLocaleString()}</span>
+              </div>
             ) : (
-              <span className="text-lg font-bold">{course.price.toLocaleString()} تومان</span>
+              <span className="text-lg font-bold text-primary">{finalPrice.toLocaleString()} تومان</span>
             )}
           </div>
-          <div className="text-sm text-yellow-500">⭐ {course.ratingAverage || 0}</div>
+          <Badge variant="outline">مشاهده دوره</Badge>
         </CardFooter>
       </Card>
     </Link>

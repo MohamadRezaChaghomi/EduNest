@@ -1,112 +1,176 @@
 'use client';
-import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
+
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 import { toast } from 'sonner';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-export default function LoginForm() {
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+export default function LogTable() {
+  const [logs, setLogs] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 });
+  const [filters, setFilters] = useState({ action: '', user: '', status: '' });
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
-  const router = useRouter();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await login(identifier, password, rememberMe);
-      toast.success('Logged in successfully');
-      router.push('/profile');
-    } catch (err) {
-      toast.error(err.message || 'Login failed');
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    const fetchLogs = async () => {
+      setLoading(true);
+      try {
+        // ارسال فیلترها به API (مرور: page, limit, action, user, status)
+        const res = await api.admin.getLogs({
+          page: pagination.page,
+          limit: 20,
+          action: filters.action,
+          user: filters.user,
+          status: filters.status,
+        });
+        setLogs(res.data);
+        setPagination(res.pagination);
+      } catch (err) {
+        toast.error('خطا در بارگذاری لاگ‌ها');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLogs();
+  }, [pagination.page, filters]);
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString('fa-IR');
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Welcome back</CardTitle>
-        <CardDescription>Sign in to your account</CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="identifier">Email or Phone</Label>
-            <Input
-              id="identifier"
-              type="text"
-              placeholder="john@example.com or 09123456789"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="rememberMe"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <Label htmlFor="rememberMe" className="text-sm">Remember me</Label>
-            </div>
-            <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-              Forgot password?
-            </Link>
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Signing in...' : 'Sign in'}
-          </Button>
-          <div className="text-sm text-center text-muted-foreground">
-            {"Don't have an account? "}
-            <Link href="/register" className="text-primary hover:underline">
-              Sign up
-            </Link>
-          </div>
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or</span>
-            </div>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
+    <div className="space-y-4" dir="rtl">
+      {/* نوار فیلترها */}
+      <div className="flex flex-wrap gap-4 items-end">
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder="شناسه کاربر یا ایمیل..."
+            value={filters.user}
+            onChange={(e) => setFilters({ ...filters, user: e.target.value, page: 1 })}
             className="w-full"
-            onClick={() => router.push('/request-otp')}
+          />
+        </div>
+        <div className="w-48">
+          <Select value={filters.action} onValueChange={(val) => setFilters({ ...filters, action: val, page: 1 })}>
+            <SelectTrigger>
+              <SelectValue placeholder="همه اقدامات" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">همه</SelectItem>
+              <SelectItem value="LOGIN_SUCCESS">ورود موفق</SelectItem>
+              <SelectItem value="LOGIN_FAILED">ورود ناموفق</SelectItem>
+              <SelectItem value="REGISTER">ثبت‌نام</SelectItem>
+              <SelectItem value="CHANGE_PASSWORD">تغییر رمز</SelectItem>
+              <SelectItem value="USER_BANNED">مسدود کردن کاربر</SelectItem>
+              <SelectItem value="USER_UNBANNED">رفع مسدودیت</SelectItem>
+              <SelectItem value="USER_DELETED">حذف کاربر</SelectItem>
+              <SelectItem value="ROLE_CHANGE">تغییر نقش</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-36">
+          <Select value={filters.status} onValueChange={(val) => setFilters({ ...filters, status: val, page: 1 })}>
+            <SelectTrigger>
+              <SelectValue placeholder="همه وضعیت‌ها" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">همه</SelectItem>
+              <SelectItem value="SUCCESS">موفق</SelectItem>
+              <SelectItem value="FAILED">ناموفق</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button variant="outline" onClick={() => setFilters({ action: '', user: '', status: '' })}>
+          پاک کردن فیلترها
+        </Button>
+      </div>
+
+      {/* جدول لاگ‌ها */}
+      <div className="border rounded-lg overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>کاربر</TableHead>
+              <TableHead>اقدام</TableHead>
+              <TableHead>وضعیت</TableHead>
+              <TableHead>IP</TableHead>
+              <TableHead>مرورگر</TableHead>
+              <TableHead>زمان</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center">در حال بارگذاری...</TableCell>
+              </TableRow>
+            ) : logs.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center">هیچ لاگی یافت نشد</TableCell>
+              </TableRow>
+            ) : (
+              logs.map((log) => (
+                <TableRow key={log._id}>
+                  <TableCell>
+                    {log.user ? `${log.user.name} (${log.user.email})` : 'ناشناس'}
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">{log.action}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      log.status === 'SUCCESS'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    }`}>
+                      {log.status === 'SUCCESS' ? 'موفق' : 'ناموفق'}
+                    </span>
+                  </TableCell>
+                  <TableCell>{log.ip || '-'}</TableCell>
+                  <TableCell className="max-w-[200px] truncate" title={log.userAgent}>
+                    {log.userAgent || '-'}
+                  </TableCell>
+                  <TableCell>{formatDate(log.createdAt)}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* صفحه‌بندی */}
+      {pagination.pages > 1 && (
+        <div className="flex justify-center items-center gap-2">
+          <Button
+            variant="outline"
+            disabled={pagination.page === 1}
+            onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
           >
-            Login with OTP
+            قبلی
           </Button>
-        </CardFooter>
-      </form>
-    </Card>
+          <span className="text-sm">صفحه {pagination.page} از {pagination.pages}</span>
+          <Button
+            variant="outline"
+            disabled={pagination.page === pagination.pages}
+            onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+          >
+            بعدی
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

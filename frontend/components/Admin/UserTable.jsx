@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -45,7 +46,7 @@ export default function UserTable() {
         setUsers(res.data);
         setPagination(res.pagination);
       } catch (err) {
-        toast.error('Failed to load users');
+        toast.error('خطا در بارگذاری کاربران');
       } finally {
         setLoading(false);
       }
@@ -60,33 +61,32 @@ export default function UserTable() {
         reason: banDialog.reason,
         expiresAt: banDialog.expiresAt || null,
       });
-      toast.success('User banned');
+      toast.success('کاربر مسدود شد');
       setBanDialog({ open: false, userId: null, reason: '', expiresAt: '' });
-      // refetch by triggering useEffect (page or filters unchanged, so we manually call? useEffect will re-run if page/filters change, but we can force by changing a dummy state? Instead just update page to itself triggers refetch)
-      setPagination(prev => ({ ...prev, page: prev.page }));
+      setPagination(prev => ({ ...prev, page: prev.page })); // re-fetch
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || 'خطا در مسدودسازی');
     }
   };
 
   const handleUnban = async (userId) => {
     try {
       await api.admin.unbanUser(userId);
-      toast.success('User unbanned');
+      toast.success('مسدودیت کاربر برداشته شد');
       setPagination(prev => ({ ...prev, page: prev.page }));
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || 'خطا در رفع مسدودیت');
     }
   };
 
   const handleDelete = async (userId) => {
-    if (confirm('Delete this user permanently? This action cannot be undone.')) {
+    if (confirm('آیا از حذف این کاربر مطمئن هستید؟ این عمل غیرقابل بازگشت است.')) {
       try {
         await api.admin.deleteUser(userId);
-        toast.success('User deleted');
+        toast.success('کاربر حذف شد');
         setPagination(prev => ({ ...prev, page: prev.page }));
       } catch (err) {
-        toast.error(err.message);
+        toast.error(err.message || 'خطا در حذف کاربر');
       }
     }
   };
@@ -98,59 +98,65 @@ export default function UserTable() {
   const handleRoleChange = async () => {
     try {
       await api.admin.changeRole(roleDialog.userId, roleDialog.newRole);
-      toast.success('Role updated');
+      toast.success('نقش کاربر به‌روز شد');
       setRoleDialog({ open: false, userId: null, newRole: '' });
       setPagination(prev => ({ ...prev, page: prev.page }));
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || 'خطا در تغییر نقش');
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-4">
-        <Input
-          placeholder="Search by name, email or phone"
-          value={filters.search}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
-          className="max-w-sm"
-        />
-        <Select
-          value={filters.role}
-          onValueChange={(val) => setFilters({ ...filters, role: val, page: 1 })}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All roles" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">All</SelectItem>
-            <SelectItem value="user">User</SelectItem>
-            <SelectItem value="instructor">Instructor</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button variant="outline" onClick={() => setPagination(prev => ({ ...prev, page: prev.page }))}>
-          Refresh
+    <div className="space-y-4" dir="rtl">
+      {/* فیلترها */}
+      <div className="flex flex-wrap gap-4 items-end">
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder="جستجو بر اساس نام، ایمیل یا تلفن..."
+            value={filters.search}
+            onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+            className="w-full"
+          />
+        </div>
+        <div className="w-40">
+          <Select
+            value={filters.role}
+            onValueChange={(val) => setFilters({ ...filters, role: val, page: 1 })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="همه نقش‌ها" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">همه</SelectItem>
+              <SelectItem value="user">کاربر عادی</SelectItem>
+              <SelectItem value="instructor">مدرس</SelectItem>
+              <SelectItem value="admin">مدیر</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button variant="outline" onClick={() => setFilters({ role: '', search: '' })}>
+          پاک کردن فیلترها
         </Button>
       </div>
 
-      <div className="border rounded-lg">
+      {/* جدول کاربران */}
+      <div className="border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>نام</TableHead>
+              <TableHead>ایمیل</TableHead>
+              <TableHead>تلفن</TableHead>
+              <TableHead>نقش</TableHead>
+              <TableHead>وضعیت</TableHead>
+              <TableHead>عملیات</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center">در حال بارگذاری...</TableCell></TableRow>
             ) : users.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center">No users found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center">کاربری یافت نشد</TableCell></TableRow>
             ) : (
               users.map((user) => (
                 <TableRow key={user._id}>
@@ -159,28 +165,28 @@ export default function UserTable() {
                   <TableCell>{user.phone}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" onClick={() => openRoleDialog(user._id, user.role)}>
-                      {user.role}
+                      {user.role === 'admin' ? 'مدیر' : user.role === 'instructor' ? 'مدرس' : 'کاربر'}
                     </Button>
                   </TableCell>
                   <TableCell>
                     {user.isBanned ? (
-                      <span className="text-red-600 font-medium">Banned</span>
+                      <span className="text-red-600 font-medium">مسدود</span>
                     ) : (
-                      <span className="text-green-600 font-medium">Active</span>
+                      <span className="text-green-600 font-medium">فعال</span>
                     )}
                   </TableCell>
                   <TableCell className="flex gap-2">
                     {!user.isBanned ? (
                       <Button variant="destructive" size="sm" onClick={() => setBanDialog({ open: true, userId: user._id, reason: '', expiresAt: '' })}>
-                        Ban
+                        مسدود
                       </Button>
                     ) : (
                       <Button variant="outline" size="sm" onClick={() => handleUnban(user._id)}>
-                        Unban
+                        رفع مسدودیت
                       </Button>
                     )}
                     <Button variant="destructive" size="sm" onClick={() => handleDelete(user._id)}>
-                      Delete
+                      حذف
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -190,70 +196,65 @@ export default function UserTable() {
         </Table>
       </div>
 
+      {/* صفحه‌بندی */}
       {pagination.pages > 1 && (
-        <div className="flex justify-center gap-2">
-          <Button
-            variant="outline"
-            disabled={pagination.page === 1}
-            onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-          >
-            Previous
+        <div className="flex justify-center items-center gap-2">
+          <Button variant="outline" disabled={pagination.page === 1} onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}>
+            قبلی
           </Button>
-          <span className="py-2 px-3">Page {pagination.page} of {pagination.pages}</span>
-          <Button
-            variant="outline"
-            disabled={pagination.page === pagination.pages}
-            onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-          >
-            Next
+          <span className="text-sm">صفحه {pagination.page} از {pagination.pages}</span>
+          <Button variant="outline" disabled={pagination.page === pagination.pages} onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}>
+            بعدی
           </Button>
         </div>
       )}
 
-      {/* Ban Dialog */}
+      {/* دیالوگ مسدودسازی */}
       <Dialog open={banDialog.open} onOpenChange={(open) => !open && setBanDialog({ open: false, userId: null, reason: '', expiresAt: '' })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ban User</DialogTitle>
-            <DialogDescription>Provide a reason and optional expiration date.</DialogDescription>
+            <DialogTitle>مسدود کردن کاربر</DialogTitle>
+            <DialogDescription>دلیل مسدودیت و تاریخ انقضای اختیاری را وارد کنید.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="reason">Reason</Label>
+              <Label htmlFor="reason">دلیل</Label>
               <Input id="reason" value={banDialog.reason} onChange={(e) => setBanDialog({ ...banDialog, reason: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="expiresAt">Expires At (optional)</Label>
+              <Label htmlFor="expiresAt">تاریخ انقضا (اختیاری)</Label>
               <Input id="expiresAt" type="datetime-local" value={banDialog.expiresAt} onChange={(e) => setBanDialog({ ...banDialog, expiresAt: e.target.value })} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBanDialog({ open: false, userId: null, reason: '', expiresAt: '' })}>Cancel</Button>
-            <Button variant="destructive" onClick={handleBan}>Ban User</Button>
+            <Button variant="outline" onClick={() => setBanDialog({ open: false, userId: null, reason: '', expiresAt: '' })}>انصراف</Button>
+            <Button variant="destructive" onClick={handleBan}>مسدود کردن</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Role Dialog */}
+      {/* دیالوگ تغییر نقش */}
       <Dialog open={roleDialog.open} onOpenChange={(open) => !open && setRoleDialog({ open: false, userId: null, newRole: '' })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change Role</DialogTitle>
-            <DialogDescription>Select a new role for this user.</DialogDescription>
+            <DialogTitle>تغییر نقش کاربر</DialogTitle>
+            <DialogDescription>نقش جدید را انتخاب کنید.</DialogDescription>
           </DialogHeader>
-          <Select value={roleDialog.newRole} onValueChange={(val) => setRoleDialog({ ...roleDialog, newRole: val })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="user">User</SelectItem>
-              <SelectItem value="instructor">Instructor</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="py-4">
+            <Select value={roleDialog.newRole} onValueChange={(val) => setRoleDialog({ ...roleDialog, newRole: val })}>
+              <SelectTrigger>
+                <SelectValue placeholder="انتخاب نقش" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">کاربر عادی</SelectItem>
+                <SelectItem value="instructor">مدرس</SelectItem>
+                <SelectItem value="admin">مدیر</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRoleDialog({ open: false, userId: null, newRole: '' })}>Cancel</Button>
-            <Button onClick={handleRoleChange}>Save</Button>
+            <Button variant="outline" onClick={() => setRoleDialog({ open: false, userId: null, newRole: '' })}>انصراف</Button>
+            <Button onClick={handleRoleChange}>ذخیره</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

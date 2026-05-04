@@ -1,11 +1,9 @@
-'use client';
+// frontend/hooks/useAuth.js
 import { useContext } from 'react';
 import { AuthContext } from '@/components/providers/AuthProvider';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };

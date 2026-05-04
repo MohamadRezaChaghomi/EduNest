@@ -1,4 +1,4 @@
-// app/page.js
+// frontend/app/page.js
 import HeroSection from '@/components/home/HeroSection';
 import CategoryList from '@/components/home/CategoryList';
 import PopularCourses from '@/components/home/PopularCourses';
@@ -7,7 +7,7 @@ import StatsSection from '@/components/home/StatsSection';
 import { api } from '@/lib/api';
 
 export default async function HomePage() {
-  // دریافت داده‌ها در سمت سرور
+
   const [categories, popularCourses, latestCourses] = await Promise.all([
     api.categories.getAll().catch(() => []),
     api.courses.getPopular({ limit: 6 }).catch(() => ({ courses: [] })),
@@ -15,12 +15,12 @@ export default async function HomePage() {
   ]);
 
   return (
-    <main>
+    <div className="overflow-hidden">
       <HeroSection />
       <CategoryList categories={categories} />
       <PopularCourses courses={popularCourses.courses || popularCourses} />
       <LatestCourses courses={latestCourses.courses || latestCourses} />
       <StatsSection />
-    </main>
+    </div>
   );
 }

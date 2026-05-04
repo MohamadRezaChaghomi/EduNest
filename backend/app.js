@@ -37,30 +37,30 @@ app.use(cors({
   credentials: true,
 }));
 
-// Stripe webhook needs raw body - must come before express.json()
+// ========== Stripe Webhook (must be before express.json) ==========
 app.post('/webhook/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
   const { stripeWebhook } = require('./src/controllers/paymentController');
   await stripeWebhook(req, res);
 });
 
-// Body parsing for all other routes
+// ========== Body parsing for all other routes ==========
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Custom middleware
+// ========== Custom middleware ==========
 app.use(requestInfo);
 
-// Static files
+// ========== Static files ==========
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/courses/cover', express.static(path.join(__dirname, 'public/courses/cover')));
 
-// Health check
+// ========== Health check ==========
 app.get('/api/test', (req, res) => {
   res.json({ message: 'EduNest backend is running!' });
 });
 
-// API Routes
+// ========== API Routes ==========
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -77,12 +77,12 @@ app.use('/api/lesson-comments', lessonCommentRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/stats', statsRoutes);
 
-// 404 handler
+// ========== 404 Handler ==========
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
 
-// Global error handler (must be last)
+// ========== Global Error Handler (must be last) ==========
 app.use(errorHandler);
 
 module.exports = app;
