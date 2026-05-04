@@ -1,11 +1,13 @@
+// backend/src/controllers/statsController.js
+
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Order = require('../models/Order');
 
 /**
- * @desc    Get site statistics (total courses, students, instructors, earnings)
- * @route   GET /api/stats/site
- * @access  Public
+ * Get site-wide statistics (total courses, students, instructors, earnings)
+ * GET /api/stats/site
+ * Access: Public
  */
 exports.getSiteStats = async (req, res) => {
   try {
@@ -22,13 +24,19 @@ exports.getSiteStats = async (req, res) => {
     const totalEarnings = salesData.length > 0 ? salesData[0].total : 0;
 
     res.json({
-      courses: totalCourses,
-      students: totalStudents,
-      instructors: totalInstructors,
-      earnings: totalEarnings,
+      success: true,
+      data: {
+        courses: totalCourses,
+        students: totalStudents,
+        instructors: totalInstructors,
+        earnings: totalEarnings,
+      },
     });
   } catch (error) {
-    console.error('Stats error:', error);
-    res.status(500).json({ message: 'Failed to fetch statistics' });
+    console.error('Get site stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch statistics. Please try again later.',
+    });
   }
 };

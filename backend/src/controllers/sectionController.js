@@ -1,67 +1,176 @@
-import Section from '../models/Section.js';
-import Course from '../models/Course.js';
-import Lesson from '../models/Lesson.js';
+// backend/src/controllers/sectionController.js
 
-// ایجاد بخش
-export const createSection = async (req, res) => {
+const Section = require('../models/Section');
+const Course = require('../models/Course');
+const Lesson = require('../models/Lesson');
+
+/**
+ * Create a new section inside a course
+ * POST /api/courses/:courseId/sections
+ * Access: Instructor or Admin
+ */
+exports.createSection = async (req, res) => {
   try {
     const { title, order } = req.body;
-    const course = await Course.findById(req.params.courseId);
-    if (!course) return res.status(404).json({ message: 'دوره پیدا نشد' });
-    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'دسترسی غیرمجاز' });
+    const { courseId } = req.params;
+
+    if (!title) {
+      return res.status(400).json({
+        success: false,
+        message: 'Section title is required.',
+      });
     }
-    const section = await Section.create({ title, order: order || 0, course: course._id });
-    res.status(201).json(section);
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found.',
+      });
+    }
+
+    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to create section in this course.',
+      });
+    }
+
+    const section = await Section.create({
+      title,
+      order: order || 0,
+      course: course._id,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: section,
+      message: 'Section created successfully.',
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Create section error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };
 
-// دریافت بخش‌های یک دوره (عمومی + populate lessons)
-export const getSectionsByCourse = async (req, res) => {
+/**
+ * Get all sections of a course (with lessons populated)
+ * GET /api/courses/:courseId/sections
+ * Access: Public (but may check enrollment in controller/course if needed)
+ */
+exports.getSectionsByCourse = async (req, res) => {
   try {
-    const sections = await Section.find({ course: req.params.courseId })
+    const { courseId } = req.params;
+
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Course ID is required.',
+      });
+    }
+
+    const sections = await Section.find({ course: courseId })
       .sort('order')
       .populate('lessons');
-    res.json(sections);
+
+    res.json({
+      success: true,
+      data: sections,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get sections by course error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };
 
-// ویرایش بخش
-export const updateSection = async (req, res) => {
+/**
+ * Update a section (title, order)
+ * PUT /api/sections/:id
+ * Access: Instructor or Admin
+ */
+exports.updateSection = async (req, res) => {
   try {
     const { title, order } = req.body;
-    const section = await Section.findById(req.params.id).populate('course');
-    if (!section) return res.status(404).json({ message: 'بخش پیدا نشد' });
+    const { id } = req.params;
+
+    const section = await Section.findById(id).populate('course');
+    if (!section) {
+      return res.status(404).json({
+        success: false,
+        message: 'Section not found.',
+      });
+    }
+
     const course = section.course;
     if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'دسترسی غیرمجاز' });
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to update this section.',
+      });
     }
+
     if (title !== undefined) section.title = title;
     if (order !== undefined) section.order = order;
     await section.save();
-    res.json(section);
+
+    res.json({
+      success: true,
+      data: section,
+      message: 'Section updated successfully.',
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Update section error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };
 
-// حذف بخش (به همراه درس‌هایش)
-export const deleteSection = async (req, res) => {
+/**
+ * Delete a section and all its lessons
+ * DELETE /api/sections/:id
+ * Access: Instructor or Admin
+ */
+exports.deleteSection = async (req, res) => {
   try {
-    const section = await Section.findById(req.params.id).populate('course');
-    if (!section) return res.status(404).json({ message: 'بخش پیدا نشد' });
+    const { id } = req.params;
+
+    const section = await Section.findById(id).populate('course');
+    if (!section) {
+      return res.status(404).json({
+        success: false,
+        message: 'Section not found.',
+      });
+    }
+
     const course = section.course;
     if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'دسترسی غیرمجاز' });
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to delete this section.',
+      });
     }
+
+    // Delete all lessons inside this section
     await Lesson.deleteMany({ section: section._id });
     await section.deleteOne();
-    res.json({ message: 'بخش و درس‌های آن حذف شد' });
+
+    res.json({
+      success: true,
+      message: 'Section and its lessons deleted successfully.',
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Delete section error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };

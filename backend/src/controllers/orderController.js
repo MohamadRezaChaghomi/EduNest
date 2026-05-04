@@ -1,30 +1,42 @@
+// backend/src/controllers/orderController.js
+
 const Order = require('../models/Order');
 const Course = require('../models/Course');
 
 /**
- * @desc    Enroll a user in a course (simple direct enrollment without payment gateway)
- * @route   POST /api/orders/enroll
- * @access  Private
+ * Enroll a user in a course (direct enrollment without payment gateway)
+ * POST /api/orders/enroll
+ * Access: Private
  */
 exports.enrollCourse = async (req, res) => {
   try {
     const { courseId } = req.body;
+
     if (!courseId) {
-      return res.status(400).json({ message: 'Course ID is required' });
+      return res.status(400).json({
+        success: false,
+        message: 'Course ID is required.',
+      });
     }
 
     const course = await Course.findById(courseId);
     if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found.',
+      });
     }
 
-    // Check if user already enrolled
-    if (course.students.includes(req.user.id)) {
-      return res.status(400).json({ message: 'You are already enrolled in this course' });
+    // Check if user is already enrolled
+    if (course.students && course.students.includes(req.user.id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'You are already enrolled in this course.',
+      });
     }
 
-    // Calculate final price (with discount)
-    const finalPrice = course.discountPrice || course.price;
+    // Calculate final price (discount takes priority)
+    const finalPrice = course.discountPrice || course.price || 0;
 
     // Create order record
     const order = await Order.create({
@@ -35,54 +47,90 @@ exports.enrollCourse = async (req, res) => {
       paidAt: new Date(),
     });
 
-    // Add user to course students
+    // Add user to course students list
+    if (!course.students) course.students = [];
     course.students.push(req.user.id);
     course.enrolledCount = course.students.length;
     await course.save();
 
     res.status(201).json({
       success: true,
-      message: 'Successfully enrolled in the course',
-      order,
+      message: 'Successfully enrolled in the course.',
+      data: {
+        order,
+        course: { id: course._id, title: course.title },
+      },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: error.message || 'Server error' });
+    console.error('Enroll course error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };
 
 /**
- * @desc    Get current user's orders
- * @route   GET /api/orders/my
- * @access  Private
+ * Get current user's orders
+ * GET /api/orders/my
+ * Access: Private
  */
 exports.getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user.id })
       .populate('items.course', 'title slug coverImage')
       .sort('-createdAt');
-    res.json(orders);
+
+    res.json({
+      success: true,
+      data: orders,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get my orders error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };
 
 /**
- * @desc    Get single order by ID
- * @route   GET /api/orders/:id
- * @access  Private (only owner or admin)
+ * Get single order by ID (owner or admin only)
+ * GET /api/orders/:id
+ * Access: Private
  */
 exports.getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id)
+    const { id } = req.params;
+
+    const order = await Order.findById(id)
       .populate('user', 'name email')
       .populate('items.course', 'title price');
-    if (!order) return res.status(404).json({ message: 'Order not found' });
-    if (order.user._id.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Unauthorized' });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found.',
+      });
     }
-    res.json(order);
+
+    // Check authorization
+    if (order.user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to view this order.',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: order,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get order by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };

@@ -1,34 +1,62 @@
+// backend/src/controllers/lessonCommentController.js
+
 const LessonComment = require('../models/LessonComment');
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
 
-// بررسی دسترسی کاربر به درس (فقط دانشجویانی که دوره را خریداری کرده‌اند یا مدرس/ادمین)
-const checkLessonAccess = async (userId, lessonId) => {
+/**
+ * Check if user has access to the lesson (enrolled student, instructor, or admin)
+ * @returns {Promise<Object>} course object
+ */
+const checkLessonAccess = async (userId, userRole, lessonId) => {
   const lesson = await Lesson.findById(lessonId).populate('section');
-  if (!lesson) throw new Error('درس یافت نشد');
+  if (!lesson) throw new Error('Lesson not found');
+
   const course = await Course.findById(lesson.section.course);
-  if (!course) throw new Error('دوره یافت نشد');
-  const isStudent = course.students.includes(userId);
+  if (!course) throw new Error('Course not found');
+
+  const isStudent = course.students && course.students.includes(userId);
   const isInstructor = course.instructor.toString() === userId;
-  const isAdmin = false; // بعداً role را چک کنید
+  const isAdmin = userRole === 'admin';
+
   if (!isStudent && !isInstructor && !isAdmin) {
-    throw new Error('شما دسترسی به این درس ندارید');
+    throw new Error('You do not have access to this lesson');
   }
   return course;
 };
 
-// @desc    ایجاد کامنت جدید روی درس (اصلی یا ریپلای)
-// @route   POST /api/lesson-comments
-// @access  Private (دانشجویانی که درس را دسترسی دارند)
+/**
+ * Create a new comment or reply on a lesson
+ * POST /api/lesson-comments
+ * Access: Private (enrolled students, instructor, admin)
+ */
 exports.createComment = async (req, res) => {
   try {
     const { lessonId, comment, parentComment } = req.body;
-    await checkLessonAccess(req.user.id, lessonId);
-    
+
+    if (!lessonId || !comment) {
+      return res.status(400).json({
+        success: false,
+        message: 'lessonId and comment are required.',
+      });
+    }
+
+    await checkLessonAccess(req.user.id, req.user.role, lessonId);
+
     if (parentComment) {
       const parent = await LessonComment.findById(parentComment);
-      if (!parent) return res.status(404).json({ message: 'کامنت اصلی یافت نشد' });
-      if (parent.parentComment) return res.status(400).json({ message: 'نمی‌توان به یک ریپلای پاسخ داد' });
+      if (!parent) {
+        return res.status(404).json({
+          success: false,
+          message: 'Parent comment not found.',
+        });
+      }
+      if (parent.parentComment) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot reply to a reply.',
+        });
+      }
     }
 
     const newComment = await LessonComment.create({
@@ -37,116 +65,238 @@ exports.createComment = async (req, res) => {
       comment,
       parentComment: parentComment || null,
     });
+
     await newComment.populate('user', 'name email profileImage');
-    res.status(201).json(newComment);
+
+    res.status(201).json({
+      success: true,
+      data: newComment,
+      message: 'Comment created successfully.',
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Create comment error:', error);
+    const status = error.message.includes('not found') || error.message.includes('access') ? 403 : 500;
+    res.status(status).json({
+      success: false,
+      message: error.message === 'Lesson not found' || error.message === 'Course not found'
+        ? error.message
+        : 'Internal server error. Please try again.',
+    });
   }
 };
 
-// @desc    دریافت کامنت‌های یک درس (همراه با ریپلای‌ها و لایک)
-// @route   GET /api/lesson-comments/lesson/:lessonId
-// @access  Public (اما بهتر است بررسی دسترسی شود – اختیاری)
+/**
+ * Get all approved comments for a lesson (with pagination and replies)
+ * GET /api/lesson-comments/lesson/:lessonId
+ * Access: Public (but can be restricted if needed)
+ */
 exports.getCommentsByLesson = async (req, res) => {
   try {
     const { lessonId } = req.params;
     const { page = 1, limit = 20 } = req.query;
-    
-    const comments = await LessonComment.find({ lesson: lessonId, parentComment: null, isApproved: true })
+
+    if (!lessonId) {
+      return res.status(400).json({
+        success: false,
+        message: 'lessonId is required.',
+      });
+    }
+
+    const comments = await LessonComment.find({
+      lesson: lessonId,
+      parentComment: null,
+      isApproved: true,
+    })
       .populate('user', 'name email profileImage')
       .populate({
         path: 'replies',
         populate: { path: 'user', select: 'name email profileImage' },
-        options: { sort: { createdAt: 1 } }
+        options: { sort: { createdAt: 1 } },
       })
       .sort('-createdAt')
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
-    
-    const total = await LessonComment.countDocuments({ lesson: lessonId, parentComment: null, isApproved: true });
+
+    const total = await LessonComment.countDocuments({
+      lesson: lessonId,
+      parentComment: null,
+      isApproved: true,
+    });
+
     res.json({
-      comments,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      total,
+      success: true,
+      data: comments,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        itemsPerPage: parseInt(limit),
+      },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get comments by lesson error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };
 
-// @desc    ویرایش کامنت (فقط مالک یا ادمین)
-// @route   PUT /api/lesson-comments/:id
-// @access  Private
+/**
+ * Update a comment (owner or admin only)
+ * PUT /api/lesson-comments/:id
+ * Access: Private
+ */
 exports.updateComment = async (req, res) => {
   try {
     const { comment } = req.body;
-    const lessonComment = await LessonComment.findById(req.params.id);
-    if (!lessonComment) return res.status(404).json({ message: 'کامنت پیدا نشد' });
-    if (lessonComment.user.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'دسترسی غیرمجاز' });
+    if (!comment) {
+      return res.status(400).json({
+        success: false,
+        message: 'Comment text is required.',
+      });
     }
+
+    const lessonComment = await LessonComment.findById(req.params.id);
+    if (!lessonComment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Comment not found.',
+      });
+    }
+
+    if (lessonComment.user.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to update this comment.',
+      });
+    }
+
     lessonComment.comment = comment;
     lessonComment.editedAt = new Date();
     await lessonComment.save();
-    res.json(lessonComment);
+
+    res.json({
+      success: true,
+      data: lessonComment,
+      message: 'Comment updated successfully.',
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Update comment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };
 
-// @desc    حذف کامنت (مالک یا ادمین) – ریپلای‌ها نیز حذف می‌شوند
-// @route   DELETE /api/lesson-comments/:id
-// @access  Private
+/**
+ * Delete a comment (owner or admin) - also deletes all its replies
+ * DELETE /api/lesson-comments/:id
+ * Access: Private
+ */
 exports.deleteComment = async (req, res) => {
   try {
     const lessonComment = await LessonComment.findById(req.params.id);
-    if (!lessonComment) return res.status(404).json({ message: 'کامنت پیدا نشد' });
-    if (lessonComment.user.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'دسترسی غیرمجاز' });
+    if (!lessonComment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Comment not found.',
+      });
     }
+
+    if (lessonComment.user.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to delete this comment.',
+      });
+    }
+
     if (!lessonComment.parentComment) {
+      // Delete all replies to this comment
       await LessonComment.deleteMany({ parentComment: lessonComment._id });
     }
     await lessonComment.deleteOne();
-    res.json({ message: 'کامنت حذف شد' });
+
+    res.json({
+      success: true,
+      message: 'Comment deleted successfully.',
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Delete comment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };
 
-// @desc    لایک/آنلایک کامنت
-// @route   POST /api/lesson-comments/:id/like
-// @access  Private
+/**
+ * Like / Unlike a comment
+ * POST /api/lesson-comments/:id/like
+ * Access: Private
+ */
 exports.toggleLike = async (req, res) => {
   try {
     const comment = await LessonComment.findById(req.params.id);
-    if (!comment) return res.status(404).json({ message: 'کامنت پیدا نشد' });
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Comment not found.',
+      });
+    }
+
     const userId = req.user.id;
     const liked = comment.likes.includes(userId);
+
     if (liked) {
       comment.likes = comment.likes.filter(id => id.toString() !== userId);
     } else {
       comment.likes.push(userId);
     }
     await comment.save();
-    res.json({ liked: !liked, likesCount: comment.likes.length });
+
+    res.json({
+      success: true,
+      liked: !liked,
+      likesCount: comment.likes.length,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Toggle like error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };
 
-// @desc    تأیید کامنت توسط ادمین (اختیاری)
-// @route   PUT /api/lesson-comments/:id/approve
-// @access  Private (Admin only)
+/**
+ * Approve a comment (Admin only)
+ * PUT /api/lesson-comments/:id/approve
+ * Access: Private (Admin)
+ */
 exports.approveComment = async (req, res) => {
   try {
     const comment = await LessonComment.findById(req.params.id);
-    if (!comment) return res.status(404).json({ message: 'کامنت پیدا نشد' });
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Comment not found.',
+      });
+    }
+
     comment.isApproved = true;
     await comment.save();
-    res.json({ message: 'کامنت تأیید شد' });
+
+    res.json({
+      success: true,
+      message: 'Comment approved successfully.',
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Approve comment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };

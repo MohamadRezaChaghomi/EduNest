@@ -1,20 +1,40 @@
-import cloudinary from '../config/cloudinary.js';
-import Course from '../models/Course.js';
-import Lesson from '../models/Lesson.js';
+// backend/src/controllers/uploadController.js
 
-// آپلود کاور دوره
-export const uploadCourseCover = async (req, res) => {
+const cloudinary = require('../config/cloudinary');
+const Course = require('../models/Course');
+const Lesson = require('../models/Lesson');
+
+/**
+ * Upload course cover image
+ * POST /api/upload/courses/:courseId/cover
+ * Access: Instructor or Admin
+ */
+exports.uploadCourseCover = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: 'فایلی ارسال نشده است' });
-    
-    const courseId = req.params.courseId;
-    const course = await Course.findById(courseId);
-    if (!course) return res.status(404).json({ message: 'دوره پیدا نشد' });
-    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'دسترسی غیرمجاز' });
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded.',
+      });
     }
 
-    // آپلود به Cloudinary
+    const { courseId } = req.params;
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found.',
+      });
+    }
+
+    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to upload cover for this course.',
+      });
+    }
+
+    // Upload to Cloudinary
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
@@ -31,27 +51,57 @@ export const uploadCourseCover = async (req, res) => {
 
     course.coverImage = result.secure_url;
     await course.save();
-    res.json({ message: 'کاور با موفقیت آپلود شد', url: result.secure_url });
+
+    res.json({
+      success: true,
+      message: 'Course cover uploaded successfully.',
+      data: { url: result.secure_url },
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Upload course cover error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };
 
-// آپلود ویدیوی درس
-export const uploadLessonVideo = async (req, res) => {
+/**
+ * Upload lesson video
+ * POST /api/upload/lessons/:lessonId/video
+ * Access: Instructor or Admin
+ */
+exports.uploadLessonVideo = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: 'فایلی ارسال نشده است' });
-    
-    const lessonId = req.params.lessonId;
-    const lesson = await Lesson.findById(lessonId)
-      .populate({ path: 'section', populate: { path: 'course' } });
-    if (!lesson) return res.status(404).json({ message: 'درس پیدا نشد' });
-    const course = lesson.section.course;
-    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'دسترسی غیرمجاز' });
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded.',
+      });
     }
 
-    // آپلود به Cloudinary (با تنظیم برای ویدیو)
+    const { lessonId } = req.params;
+    const lesson = await Lesson.findById(lessonId).populate({
+      path: 'section',
+      populate: { path: 'course' },
+    });
+
+    if (!lesson) {
+      return res.status(404).json({
+        success: false,
+        message: 'Lesson not found.',
+      });
+    }
+
+    const course = lesson.section.course;
+    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to upload video for this lesson.',
+      });
+    }
+
+    // Upload to Cloudinary with video settings
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
@@ -70,8 +120,20 @@ export const uploadLessonVideo = async (req, res) => {
     lesson.videoUrl = result.secure_url;
     lesson.videoDuration = Math.round(result.duration || 0);
     await lesson.save();
-    res.json({ message: 'ویدیو با موفقیت آپلود شد', url: result.secure_url, duration: lesson.videoDuration });
+
+    res.json({
+      success: true,
+      message: 'Lesson video uploaded successfully.',
+      data: {
+        url: result.secure_url,
+        duration: lesson.videoDuration,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Upload lesson video error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again.',
+    });
   }
 };
