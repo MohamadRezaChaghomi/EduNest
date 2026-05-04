@@ -1,3 +1,5 @@
+// backend/src/models/Category.js
+
 const mongoose = require('mongoose');
 
 /**
@@ -10,16 +12,20 @@ const categorySchema = new mongoose.Schema(
       required: [true, 'Category name is required'],
       unique: true,
       trim: true,
+      index: true,
     },
     slug: {
       type: String,
       required: [true, 'Slug is required'],
       unique: true,
       lowercase: true,
+      trim: true,
+      index: true,
     },
     description: {
       type: String,
       default: '',
+      trim: true,
     },
     image: {
       type: String,
@@ -29,17 +35,24 @@ const categorySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
       default: null,
+      index: true,
     },
     order: {
       type: Number,
       default: 0,
+      index: true,
     },
     isActive: {
       type: Boolean,
       default: true,
+      index: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
 
 // Virtual for subcategories
@@ -50,12 +63,18 @@ categorySchema.virtual('subcategories', {
 });
 
 // Auto-generate slug from name if not provided
-categorySchema.pre('save', function () {
+categorySchema.pre('save', function (next) {
   if (!this.slug && this.name) {
+    // Generate slug: support Persian, English, numbers, replace spaces/special chars with dash
     this.slug = this.name
-      .replace(/[^\u0600-\u06FF\w]/g, '-')
+      .replace(/[^\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFFa-zA-Z0-9\s]/g, '')
+      .replace(/\s+/g, '-')
       .toLowerCase();
   }
+  next();
 });
+
+// Compound index for efficient queries (active categories sorted by order)
+categorySchema.index({ isActive: 1, order: 1 });
 
 module.exports = mongoose.model('Category', categorySchema);
