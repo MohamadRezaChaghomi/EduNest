@@ -1,11 +1,13 @@
 // app/admin/layout.js
 'use client';
+
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, BookOpen, Star, Flag, Ticket, FileText } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const navItems = [
   { href: '/admin', label: 'داشبورد', icon: LayoutDashboard },
@@ -28,15 +30,21 @@ export default function AdminLayout({ children }) {
     }
   }, [user, loading, router]);
 
-  if (loading) return <div className="flex justify-center items-center h-screen">در حال بارگذاری...</div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Skeleton className="w-32 h-8" />
+      </div>
+    );
+  }
   if (!user || user.role !== 'admin') return null;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <aside className="w-64 bg-white shadow-md sticky top-0 h-screen overflow-y-auto border-l">
-        <div className="p-4 border-b">
-          <h2 className="font-bold text-lg">پنل مدیریت</h2>
-          <p className="text-sm text-gray-500">{user.name}</p>
+    <div className="flex min-h-screen bg-muted/20" dir="rtl">
+      <aside className="w-64 bg-card border-l border-border sticky top-0 h-screen overflow-y-auto">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-bold text-lg text-foreground">پنل مدیریت</h2>
+          <p className="text-sm text-muted-foreground">{user.name}</p>
         </div>
         <nav className="p-4 space-y-1">
           {navItems.map((item) => {
@@ -49,7 +57,7 @@ export default function AdminLayout({ children }) {
                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
                   isActive
                     ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-gray-100'
+                    : 'text-foreground hover:bg-muted'
                 }`}
               >
                 <Icon className="w-4 h-4" />

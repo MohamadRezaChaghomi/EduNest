@@ -10,9 +10,9 @@ import LogTable from '@/components/admin/LogTable';
 export default function AdminDashboard() {
   return (
     <div className="container mx-auto py-8 px-4" dir="rtl">
-      <h1 className="text-3xl font-bold mb-6">پنل مدیریت</h1>
+      <h1 className="text-3xl font-bold mb-6 text-foreground">پنل مدیریت</h1>
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="flex flex-wrap gap-2">
+        <TabsList className="flex flex-wrap gap-2 bg-muted/50">
           <TabsTrigger value="users">کاربران</TabsTrigger>
           <TabsTrigger value="courses">دوره‌ها</TabsTrigger>
           <TabsTrigger value="reviews">نظرات</TabsTrigger>
