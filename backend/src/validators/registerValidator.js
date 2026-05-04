@@ -1,5 +1,6 @@
-const Validator = require('fastest-validator');
+// backend/src/validators/registerValidator.js
 
+const Validator = require('fastest-validator');
 const validator = new Validator();
 
 const registerSchema = {
@@ -10,9 +11,8 @@ const registerSchema = {
     optional: false,
     messages: {
       required: 'Name is required',
-      string: 'Name must be a string',
       stringMin: 'Name must be at least 3 characters',
-      stringMax: 'Name cannot be more than 50 characters',
+      stringMax: 'Name cannot exceed 50 characters',
     },
   },
   email: {
@@ -23,13 +23,13 @@ const registerSchema = {
       email: 'Please provide a valid email address',
     },
   },
-  phone: { 
-    type: 'string', 
-    pattern: /^[0-9]{10,15}$/, 
-    optional: false, 
-    messages: { 
-      pattern: 'Phone must be 10-15 digits' 
-    } 
+  phone: {
+    type: 'string',
+    pattern: /^[0-9]{10,15}$/,
+    optional: false,
+    messages: {
+      pattern: 'Phone number must be 10 to 15 digits',
+    },
   },
   password: {
     type: 'string',
