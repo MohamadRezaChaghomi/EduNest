@@ -1,5 +1,5 @@
-// components/home/StatsSection.jsx
 'use client';
+
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
@@ -33,14 +33,14 @@ export default function StatsSection() {
 
   if (loading) {
     return (
-      <section className="py-16 bg-primary text-primary-foreground">
+      <section className="py-16 bg-primary text-primary-foreground" dir="rtl">
         <div className="container mx-auto px-4 text-center">در حال بارگذاری آمار...</div>
       </section>
     );
   }
 
   return (
-    <section className="py-16 bg-primary text-primary-foreground">
+    <section className="py-16 bg-primary text-primary-foreground" dir="rtl">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           <div className="space-y-2">

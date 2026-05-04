@@ -1,4 +1,3 @@
-// components/home/LatestCourses.jsx
 import CourseCard from '@/components/course/CourseCard';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -7,7 +6,7 @@ export default function LatestCourses({ courses }) {
   if (!courses?.length) return null;
 
   return (
-    <section className="py-16 bg-muted/30">
+    <section className="py-16 bg-muted/30" dir="rtl">
       <div className="container mx-auto px-4">
         <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
           <h2 className="text-3xl font-bold text-foreground">جدیدترین دوره‌ها</h2>

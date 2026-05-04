@@ -1,12 +1,12 @@
-// components/home/HeroSection.jsx
 'use client';
-import { motion } from 'framer-motion'; // در صورت نبودن، خط زیر را از کامنت خارج کنید و کتابخانه را نصب کنید
+
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export default function HeroSection() {
   return (
-    <section className="bg-gradient-to-br from-primary/5 via-primary/10 to-background py-20 md:py-28">
+    <section className="bg-gradient-to-br from-primary/5 via-primary/10 to-background py-20 md:py-28" dir="rtl">
       <div className="container mx-auto px-4 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
