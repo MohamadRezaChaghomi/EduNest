@@ -1,5 +1,7 @@
+// backend/src/routes/ticketRoutes.js
+
 const express = require('express');
-const { protect } = require('../middlewares/authMiddleware');
+const { protect } = require('../middleware/auth');
 const {
   createTicket,
   getTickets,
@@ -11,15 +13,19 @@ const {
 
 const router = express.Router();
 
+// All ticket routes require authentication (role checks inside controllers)
+router.use(protect);
+
+// ========== Routes ==========
 router.route('/')
-  .post(protect, createTicket)
-  .get(protect, getTickets);
+  .post(createTicket)
+  .get(getTickets);
 
 router.route('/:id')
-  .get(protect, getTicketById)
-  .delete(protect, deleteTicket); // فقط ادمین در کنترلر بررسی می‌شود
+  .get(getTicketById)
+  .delete(deleteTicket); // Admin only (checked in controller)
 
-router.post('/:id/messages', protect, addMessage);
-router.put('/:id/status', protect, updateTicketStatus);
+router.post('/:id/messages', addMessage);
+router.put('/:id/status', updateTicketStatus); // Instructor/Admin only (checked in controller)
 
 module.exports = router;

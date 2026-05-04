@@ -1,5 +1,7 @@
+// backend/src/routes/lessonCommentRoutes.js
+
 const express = require('express');
-const { protect, adminOnly } = require('../middlewares/authMiddleware');
+const { protect, adminOnly } = require('../middleware/auth');
 const {
   createComment,
   getCommentsByLesson,
@@ -11,16 +13,16 @@ const {
 
 const router = express.Router();
 
-router.route('/')
-  .post(protect, createComment);
-
+// ========== Public Routes ==========
 router.get('/lesson/:lessonId', getCommentsByLesson);
 
-router.route('/:id')
-  .put(protect, updateComment)
-  .delete(protect, deleteComment);
-
+// ========== Protected Routes (Authenticated Users) ==========
+router.post('/', protect, createComment);
+router.put('/:id', protect, updateComment);
+router.delete('/:id', protect, deleteComment);
 router.post('/:id/like', protect, toggleLike);
+
+// ========== Admin Only Routes ==========
 router.put('/:id/approve', protect, adminOnly, approveComment);
 
 module.exports = router;

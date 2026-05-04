@@ -1,16 +1,24 @@
+// backend/src/routes/categoryRoutes.js
+
 const express = require('express');
-const { createCategory, getCategories, getCategoryById, updateCategory, deleteCategory } = require('../controllers/categoryController');
-const { protect, adminOnly } = require('../middlewares/authMiddleware');
+const {
+  createCategory,
+  getCategories,
+  getCategoryById,
+  updateCategory,
+  deleteCategory,
+} = require('../controllers/categoryController');
+const { protect, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.route('/')
-  .get(getCategories)
-  .post(protect, adminOnly, createCategory);
+// Public routes (no authentication)
+router.get('/', getCategories);
+router.get('/:id', getCategoryById);
 
-router.route('/:id')
-  .get(getCategoryById)
-  .put(protect, adminOnly, updateCategory)
-  .delete(protect, adminOnly, deleteCategory);
+// Admin-only routes
+router.post('/', protect, adminOnly, createCategory);
+router.put('/:id', protect, adminOnly, updateCategory);
+router.delete('/:id', protect, adminOnly, deleteCategory);
 
 module.exports = router;

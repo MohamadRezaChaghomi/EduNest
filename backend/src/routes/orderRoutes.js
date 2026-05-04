@@ -1,11 +1,21 @@
+// backend/src/routes/orderRoutes.js
+
 const express = require('express');
-const { protect } = require('../middlewares/authMiddleware');
-const { enrollCourse, getMyOrders, getOrderById } = require('../controllers/orderController');
+const { protect } = require('../middleware/auth');
+const {
+  enrollCourse,
+  getMyOrders,
+  getOrderById,
+} = require('../controllers/orderController');
 
 const router = express.Router();
 
-router.post('/enroll', protect, enrollCourse);
-router.get('/my', protect, getMyOrders);
-router.get('/:id', protect, getOrderById);
+// All order routes require authentication
+router.use(protect);
+
+// ========== Routes ==========
+router.post('/enroll', enrollCourse);
+router.get('/my', getMyOrders);    // Must come before /:id to avoid conflict
+router.get('/:id', getOrderById);
 
 module.exports = router;

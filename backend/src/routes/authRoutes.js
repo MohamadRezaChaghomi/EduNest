@@ -1,3 +1,5 @@
+// backend/src/routes/authRoutes.js
+
 const express = require('express');
 const {
   register,
@@ -14,11 +16,11 @@ const {
   requestOtp,
   verifyOtp,
 } = require('../controllers/authController');
-const { protect } = require('../middlewares/authMiddleware');
+const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Public routes
+// ========== Public Routes ==========
 router.post('/register', register);
 router.post('/login', login);
 router.post('/refresh', refreshAccessToken);
@@ -27,7 +29,7 @@ router.put('/reset-password/:token', resetPassword);
 router.post('/request-otp', requestOtp);
 router.post('/verify-otp', verifyOtp);
 
-// Protected routes
+// ========== Protected Routes ==========
 router.post('/logout', protect, logout);
 router.post('/logout-all', protect, logoutAll);
 router.get('/me', protect, getMe);

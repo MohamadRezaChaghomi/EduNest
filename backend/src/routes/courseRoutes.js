@@ -1,3 +1,5 @@
+// backend/src/routes/courseRoutes.js
+
 const express = require('express');
 const {
   createCourse,
@@ -9,23 +11,23 @@ const {
   getAllCoursesAdmin,
   getPopularCourses,
 } = require('../controllers/courseController');
-const { protect, adminOnly, instructorOnly } = require('../middlewares/authMiddleware');
+const { protect, adminOnly, instructorOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
-// مسیرهای عمومی
+// ========== Public Routes ==========
 router.get('/', getCourses);
 router.get('/popular', getPopularCourses);
-router.get('/:slug', getCourseBySlug);
+router.get('/:slug', getCourseBySlug); // slug-based lookup (must come after specific routes)
 
-// مسیرهای محافظت شده برای مدرس/ادمین
+// ========== Instructor/Admin Routes ==========
 router.post('/', protect, instructorOnly, createCourse);
 router.get('/instructor/my-courses', protect, instructorOnly, getMyCourses);
 
-// مسیرهای ادمین (باید قبل از /:slug بیاید تا تداخل نداشته باشد)
+// ========== Admin Only Routes ==========
 router.get('/admin/all', protect, adminOnly, getAllCoursesAdmin);
 
-// مسیرهای عمومی با پارامتر id (توجه: مسیر /:slug قبل از این تعریف شده، پس اینها برای id هستند)
+// ========== ID-based Routes (with authorization) ==========
 router.put('/:id', protect, updateCourse);
 router.delete('/:id', protect, deleteCourse);
 

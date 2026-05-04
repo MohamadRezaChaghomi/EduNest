@@ -1,3 +1,5 @@
+// backend/src/routes/reviewRoutes.js
+
 const express = require('express');
 const {
   createReview,
@@ -9,22 +11,22 @@ const {
   pinReview,
   markOfficial,
 } = require('../controllers/reviewController');
-const { protect, adminOnly } = require('../middlewares/authMiddleware');
+const { protect, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.route('/')
-  .post(protect, createReview);
-
+// ========== Public Routes ==========
 router.get('/course/:courseId', getCourseReviews);
 
-router.route('/:id')
-  .put(protect, updateReview)
-  .delete(protect, deleteReview);
-
+// ========== Protected Routes (Authenticated Users) ==========
+router.post('/', protect, createReview);
+router.put('/:id', protect, updateReview);
+router.delete('/:id', protect, deleteReview);
 router.post('/:id/like', protect, toggleLike);
+router.post('/:id/pin', protect, pinReview);       // Instructor or admin (checked in controller)
+router.post('/:id/official', protect, markOfficial); // Instructor or admin (checked in controller)
+
+// ========== Admin Only Routes ==========
 router.put('/:id/approve', protect, adminOnly, approveReview);
-router.post('/:id/pin', protect, pinReview);
-router.post('/:id/official', protect, markOfficial);
 
 module.exports = router;
