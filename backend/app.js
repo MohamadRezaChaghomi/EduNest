@@ -32,6 +32,10 @@ const orderRoutes = require('./src/routes/orderRoutes');
 const lessonCommentRoutes = require('./src/routes/lessonCommentRoutes');
 const contactRoutes = require('./src/routes/contactRoutes');
 
+// Import stats routes
+const statsRoutes = require('./src/routes/statsRoutes');
+
+
 dotenv.config();
 connectDB();
 
@@ -115,5 +119,7 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Something went wrong on the server' });
 });
+
+app.use('/api/stats', statsRoutes);
 
 module.exports = app;

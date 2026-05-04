@@ -197,7 +197,6 @@ export const api = {
       return fetchAPI(`/upload/lessons/${lessonId}/video`, { method: 'POST', body: formData, headers: {} });
     },
   },
-
   stats: {
     getSiteStats: () => fetchAPI('/stats/site'),
   },
